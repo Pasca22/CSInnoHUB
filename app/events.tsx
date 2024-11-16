@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text } from "react-native";
-import { db } from "../firebaseConfig"; 
+import { db } from "../firebaseConfig";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { Event } from "./types";
 
@@ -8,10 +8,20 @@ export default function Events() {
   
   const [events, setEvents] = useState<Event[]>([]);
   
-  async function fetchEvents() {
-    const eventsCollection = collection(db, "events"); 
+   async function fetchEvents(): Promise<Event[]> {
+    const eventsCollection = collection(db, "events");
     const eventsSnapshot = await getDocs(eventsCollection);
-    return eventsSnapshot.docs.map((doc) => doc.data());
+
+    return eventsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      const event: Event = {
+        title: data.title,
+        description: data.description,
+        date: data.date instanceof Timestamp ? data.date : new Timestamp(0, 0),
+        location: data.location,
+      };
+      return event;
+    });
   }
 
   useEffect(() => {
@@ -22,10 +32,8 @@ export default function Events() {
     fetchData();
   }, []);
 
-  function formatDate(date) {
-    return date instanceof Timestamp
-      ? date.toDate().toLocaleString()
-      : date;
+  function formatDate(date: Timestamp): string {
+    return date.toDate().toLocaleString();
   }
 
   return (
