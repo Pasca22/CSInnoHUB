@@ -1,23 +1,24 @@
-import {Link, router} from "expo-router";
+import {router} from "expo-router";
 import {useState} from "react";
 import {Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {signInWithEmailAndPassword} from "firebase/auth";
+import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "../firebaseConfig"
 
 
-const Register = () => {
+const Index = () => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [message, setMessage] = useState("");
 
-    const handleSignIn = () => {
-        signInWithEmailAndPassword(auth, email, password)
+    const handleSignUp = () => {
+        createUserWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
                 // Signed in
                 const user = userCredential.user;
-                router.push("/profile")
+                router.push("/")
             })
             .catch((error) => {
                 const errorCode = error.code;
@@ -27,8 +28,10 @@ const Register = () => {
                     setMessage("Va rugam introduceti un email valid!");
                 else if(errorCode == "auth/missing-password")
                     setMessage("Va rugam introduceti o parola!");
-                else if(errorCode == "auth/invalid-credential")
-                    setMessage("Contul nu exista!");
+                else if(confirmPassword != password)
+                    setMessage("Parolele nu se potrivesc!");
+                else if(errorCode == "auth/weak-password")
+                    setMessage("Parola trebuie sa aiba minim 8 caractere!");
             });
 
     }
@@ -44,16 +47,16 @@ const Register = () => {
                     onChangeText={setPassword}
                     value={password}
                 />
-                <Link
-                    href={"/register"}
-                    style={{marginBottom: 10}}
-                >
-                    <Text>Don't have an account? Create one</Text>
-                </Link>
+                <Text>Confirm password</Text>
+                <TextInput
+                    style={styles.input}
+                    onChangeText={setConfirmPassword}
+                    value={confirmPassword}
+                ></TextInput>
                 <Button
-                    title="Login"
-                    color="#f194ff"
-                    onPress={handleSignIn}
+                    title="Register"
+                    color="#f1243f"
+                    onPress={handleSignUp}
                 />
                 <Text style={styles.statusMessage}>{message}</Text>
             </SafeAreaView>
@@ -80,4 +83,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default Register;
+export default Index;
