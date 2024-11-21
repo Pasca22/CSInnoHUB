@@ -1,12 +1,13 @@
-import {router} from "expo-router";
+import {Link, router} from "expo-router";
 import React, {useEffect, useState} from "react";
 import {ActivityIndicator, Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
+import {browserLocalPersistence, inMemoryPersistence, setPersistence, signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "../firebaseConfig"
+import {Route} from "expo-router/build/Route";
 
 
-const Register = () => {
+const Login = () => {
 
     const [isLoading, setIsLoading] = useState(true);
 
@@ -24,30 +25,34 @@ const Register = () => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
     const [message, setMessage] = useState("");
 
-    const handleSignUp = () => {
-        createUserWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                // Signed in
-                const user = userCredential.user;
-                router.push("/")
+    const handleSignIn = () => {
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        // Signed in
+                        const user = userCredential.user;
+                        router.push("/profile")
+                    })
+                    .catch((error) => {
+                        const errorCode = error.code;
+                        const errorMessage = error.message;
+
+                        if(errorCode == "auth/invalid-email")
+                            setMessage("Va rugam introduceti un email valid!");
+                        else if(errorCode == "auth/missing-password")
+                            setMessage("Va rugam introduceti o parola!");
+                        else if(errorCode == "auth/invalid-credential")
+                            setMessage("Contul nu exista!");
+                    });
             })
             .catch((error) => {
+                // Handle Errors here.
                 const errorCode = error.code;
                 const errorMessage = error.message;
-
-                if(errorCode == "auth/invalid-email")
-                    setMessage("Va rugam introduceti un email valid!");
-                else if(errorCode == "auth/missing-password")
-                    setMessage("Va rugam introduceti o parola!");
-                else if(confirmPassword != password)
-                    setMessage("Parolele nu se potrivesc!");
-                else if(errorCode == "auth/weak-password")
-                    setMessage("Parola trebuie sa aiba minim 8 caractere!");
             });
-
     }
 
     if (isLoading)
@@ -69,17 +74,16 @@ const Register = () => {
                     value={password}
                     secureTextEntry={true}
                 />
-                <Text>Confirm password</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setConfirmPassword}
-                    value={confirmPassword}
-                    secureTextEntry={true}
-                ></TextInput>
+                <Link
+                    href={"/register"}
+                    style={{marginBottom: 10}}
+                >
+                    <Text>Don't have an account? Create one</Text>
+                </Link>
                 <Button
-                    title="Register"
-                    color="#f1243f"
-                    onPress={handleSignUp}
+                    title="Login"
+                    color="#f194ff"
+                    onPress={handleSignIn}
                 />
                 <Text style={styles.statusMessage}>{message}</Text>
             </SafeAreaView>
@@ -111,4 +115,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Register;
+export default Login;
