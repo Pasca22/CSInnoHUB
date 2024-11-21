@@ -4,7 +4,6 @@ import {ActivityIndicator, Button, StyleSheet, Text, TextInput} from "react-nati
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {browserLocalPersistence, inMemoryPersistence, setPersistence, signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "../firebaseConfig"
-import {Route} from "expo-router/build/Route";
 
 
 const Login = () => {

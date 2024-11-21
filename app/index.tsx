@@ -1,9 +1,8 @@
+import { auth } from "@/firebaseConfig";
+import {ActivityIndicator, StyleSheet} from "react-native";
 import {router} from "expo-router";
 import React, {useEffect} from "react";
-import {ActivityIndicator, StyleSheet} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {auth} from "../firebaseConfig"
-
 
 const Index = () => {
     useEffect(() => {
