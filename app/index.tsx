@@ -1,11 +1,38 @@
-import { Link } from "expo-router";
-import { useState } from "react";
-import { TextInput, StyleSheet, Text, Button } from "react-native";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import {router} from "expo-router";
+import {useState} from "react";
+import { auth } from "../firebaseConfig";
+import {Button, StyleSheet, Text, TextInput} from "react-native";
+import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
+import {signInWithEmailAndPassword} from "firebase/auth";
+
 
 const Index = () => {
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+
+  const handleSignIn = () => {
+    signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          // Signed in
+          const user = userCredential.user;
+          router.push("/profile")
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+
+          if(errorCode == "auth/invalid-email")
+            setMessage("Va rugam introduceti un email valid!");
+          else if(errorCode == "auth/missing-password")
+            setMessage("Va rugam introduceti o parola!");
+          else if(errorCode == "auth/invalid-credential")
+            setMessage("Contul nu exista!");
+        });
+
+  }
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -17,9 +44,12 @@ const Index = () => {
           onChangeText={setPassword}
           value={password}
         />
-        <Link href="/profile" asChild>
-          <Button title="Login" />
-        </Link>
+          <Button
+              title="Login"
+              color="#f194ff"
+              onPress={handleSignIn}
+          />
+        <Text style={styles.statusMessage}>{message}</Text>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -38,6 +68,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 10,
   },
+  statusMessage: {
+    marginTop: 10,
+    color: "#f60000",
+  }
 });
 
 export default Index;
