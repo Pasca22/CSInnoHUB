@@ -46,12 +46,14 @@ const Index = () => {
                     style={styles.input}
                     onChangeText={setPassword}
                     value={password}
+                    secureTextEntry={true}
                 />
                 <Text>Confirm password</Text>
                 <TextInput
                     style={styles.input}
                     onChangeText={setConfirmPassword}
                     value={confirmPassword}
+                    secureTextEntry={true}
                 ></TextInput>
                 <Button
                     title="Register"

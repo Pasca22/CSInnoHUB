@@ -2,7 +2,7 @@ import {Link, router} from "expo-router";
 import {useState} from "react";
 import {Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {signInWithEmailAndPassword} from "firebase/auth";
+import {browserLocalPersistence, setPersistence, signInWithEmailAndPassword} from "firebase/auth";
 import {auth} from "../firebaseConfig"
 
 
@@ -13,24 +13,31 @@ const Register = () => {
     const [message, setMessage] = useState("");
 
     const handleSignIn = () => {
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                // Signed in
-                const user = userCredential.user;
-                router.push("/profile")
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+                signInWithEmailAndPassword(auth, email, password)
+                    .then((userCredential) => {
+                        // Signed in
+                        const user = userCredential.user;
+                        router.push("/profile")
+                    })
+                    .catch((error) => {
+                        const errorCode = error.code;
+                        const errorMessage = error.message;
+
+                        if(errorCode == "auth/invalid-email")
+                            setMessage("Va rugam introduceti un email valid!");
+                        else if(errorCode == "auth/missing-password")
+                            setMessage("Va rugam introduceti o parola!");
+                        else if(errorCode == "auth/invalid-credential")
+                            setMessage("Contul nu exista!");
+                    });
             })
             .catch((error) => {
+                // Handle Errors here.
                 const errorCode = error.code;
                 const errorMessage = error.message;
-
-                if(errorCode == "auth/invalid-email")
-                    setMessage("Va rugam introduceti un email valid!");
-                else if(errorCode == "auth/missing-password")
-                    setMessage("Va rugam introduceti o parola!");
-                else if(errorCode == "auth/invalid-credential")
-                    setMessage("Contul nu exista!");
             });
-
     }
 
     return (
@@ -43,6 +50,7 @@ const Register = () => {
                     style={styles.input}
                     onChangeText={setPassword}
                     value={password}
+                    secureTextEntry={true}
                 />
                 <Link
                     href={"/register"}
