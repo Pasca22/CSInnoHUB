@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CSInnoHUB",
-    "slug": "CSInnoHUB",
+    "slug": "csinnohub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -32,6 +32,21 @@
     "experiments": {
       "typedRoutes": true,
       "basedUrl": "/CSInnoHUB"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "1f0da30c-a142-4090-940c-358f024fa5d5"
+      }
+    },
+    "owner": "tudor.ileni",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1f0da30c-a142-4090-940c-358f024fa5d5"
     }
   }
 }
