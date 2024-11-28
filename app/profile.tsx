@@ -1,41 +1,24 @@
-import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {ActivityIndicator, Button, StyleSheet, Text} from "react-native";
-import React, {useEffect, useState} from "react";
-import {auth} from "@/firebaseConfig";
-import {router} from "expo-router";
+import {SafeAreaView} from "react-native-safe-area-context";
+import {Button, StyleSheet, Text} from "react-native";
+import React, {useContext} from "react";
+import {AuthContext} from "@/app/index";
+import Login from "@/app/login";
 import {signOut} from "@firebase/auth";
+import firebase from "firebase/compat";
+import {auth} from "@/firebaseConfig";
 
 const Profile = () => {
-    const [isLoading, setIsLoading] = useState(true);
+    const isAuthenticated = useContext(AuthContext);
+    if(!isAuthenticated)
+        return <Login></Login>
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            if (auth.currentUser == null)
-                router.replace("/login")
-            setIsLoading(false)
-        }
-
-        setTimeout(() => {
-            checkAuth();
-        }, 250)
-    }, [router])
-
-    if (isLoading)
-        return (
-            <SafeAreaProvider>
-                <SafeAreaView style={[styles.container, styles.horizontal]}>
-                    <ActivityIndicator size="large"></ActivityIndicator>
-                </SafeAreaView>
-            </SafeAreaProvider>)
-    else return (
+    return (
         <SafeAreaView style={styles.container}>
             <Text>My Profile</Text>
             <Button
                 title={"Log out"}
                 onPress={() => {
-                    signOut(auth).then(() => {
-                        router.push("/");
-                    })
+                    signOut(auth);
                 }}
             ></Button>
         </SafeAreaView>

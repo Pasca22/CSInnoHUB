@@ -1,26 +1,17 @@
 import {router} from "expo-router";
-import React, {useEffect, useState} from "react";
-import {ActivityIndicator, Button, StyleSheet, Text, TextInput} from "react-native";
+import React, {useContext, useState} from "react";
+import {Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
+import {createUserWithEmailAndPassword} from "firebase/auth";
 import {auth} from "../firebaseConfig"
+import {AuthContext} from "@/app/index";
+import Profile from "@/app/profile";
 
 
 const Register = () => {
-
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const checkAuth = async () => {
-            if (auth.currentUser != null)
-                router.replace("/profile")
-            setIsLoading(false)
-        }
-
-        setTimeout(() => {
-            checkAuth();
-        }, 250)
-    }, [router])
+    //const isAuthenticated = useContext(AuthContext);
+    //if(isAuthenticated)
+        //return <Profile></Profile>
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -32,7 +23,7 @@ const Register = () => {
             .then((userCredential) => {
                 // Signed in
                 const user = userCredential.user;
-                router.push("/")
+
             })
             .catch((error) => {
                 const errorCode = error.code;
@@ -50,14 +41,7 @@ const Register = () => {
 
     }
 
-    if (isLoading)
-        return (
-            <SafeAreaProvider>
-                <SafeAreaView style={[styles.container, styles.horizontal]}>
-                    <ActivityIndicator size="large"></ActivityIndicator>
-                </SafeAreaView>
-            </SafeAreaProvider>)
-    else return (
+    return (
         <SafeAreaProvider>
             <SafeAreaView style={styles.container}>
                 <Text>Email</Text>
