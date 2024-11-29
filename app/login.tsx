@@ -11,7 +11,7 @@ import Profile from "@/app/profile";
 const Login = () => {
     const isAuthenticated = useContext(AuthContext);
     if(isAuthenticated)
-        return <Profile></Profile>
+        return <Profile/>
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -21,11 +21,6 @@ const Login = () => {
         setPersistence(auth, browserLocalPersistence)
             .then(() => {
                 signInWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        // Signed in
-                        const user = userCredential.user;
-                        router.replace("/profile")
-                    })
                     .catch((error) => {
                         const errorCode = error.code;
                         const errorMessage = error.message;
@@ -38,11 +33,7 @@ const Login = () => {
                             setMessage("Contul nu exista!");
                     });
             })
-            .catch((error) => {
-                // Handle Errors here.
-                const errorCode = error.code;
-                const errorMessage = error.message;
-            });
+            .catch((error) => {});
     }
 
     return (

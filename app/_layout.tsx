@@ -22,7 +22,7 @@ export default function RootLayout() {
 
 }
 
-function NotAuthenticatedTabBar(){
+const NotAuthenticatedTabBar= () => {
         return(
             <Tab.Navigator initialRouteName="index">
                 <Tab.Screen
@@ -44,7 +44,7 @@ function NotAuthenticatedTabBar(){
             </Tab.Navigator>)
 }
 
-function AuthenticatedTabBar(){
+const AuthenticatedTabBar = () =>{
     return(
         <Tab.Navigator initialRouteName="index">
             <Tab.Screen

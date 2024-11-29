@@ -17,12 +17,12 @@ const Index = () => {
     if (isAuthenticated)
         return (
             <AuthContext.Provider value={isAuthenticated}>
-                <Profile></Profile>
+                <Profile/>
             </AuthContext.Provider>
         );
     return (
         <AuthContext.Provider value={isAuthenticated}>
-            <Login></Login>
+            <Login/>
         </AuthContext.Provider>
     );
 };

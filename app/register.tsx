@@ -1,17 +1,11 @@
-import {router} from "expo-router";
-import React, {useContext, useState} from "react";
+import React, {useState} from "react";
 import {Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {createUserWithEmailAndPassword} from "firebase/auth";
 import {auth} from "../firebaseConfig"
-import {AuthContext} from "@/app/index";
-import Profile from "@/app/profile";
 
 
 const Register = () => {
-    //const isAuthenticated = useContext(AuthContext);
-    //if(isAuthenticated)
-        //return <Profile></Profile>
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -20,14 +14,8 @@ const Register = () => {
 
     const handleSignUp = () => {
         createUserWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                // Signed in
-                const user = userCredential.user;
-
-            })
             .catch((error) => {
                 const errorCode = error.code;
-                const errorMessage = error.message;
 
                 if(errorCode == "auth/invalid-email")
                     setMessage("Va rugam introduceti un email valid!");
