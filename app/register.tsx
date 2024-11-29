@@ -2,7 +2,8 @@ import React, {useState} from "react";
 import {Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {createUserWithEmailAndPassword} from "firebase/auth";
-import {auth} from "../firebaseConfig"
+import {auth, db} from "../firebaseConfig"
+import {doc, setDoc} from "@firebase/firestore";
 
 
 const Register = () => {
@@ -14,6 +15,15 @@ const Register = () => {
 
     const handleSignUp = () => {
         createUserWithEmailAndPassword(auth, email, password)
+            .then(() => {
+                    setDoc(doc(db, "users", "" + auth.currentUser?.uid.toString()), {
+                        auth_ref: auth.currentUser?.uid,
+                        nume: null,
+                        specializare: null,
+                        an_inrolare: null,
+                        poza_url: null,
+                    });
+            })
             .catch((error) => {
                 const errorCode = error.code;
 
