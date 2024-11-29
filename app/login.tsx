@@ -3,9 +3,10 @@ import React, {useContext, useState} from "react";
 import {Button, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {browserLocalPersistence, setPersistence, signInWithEmailAndPassword} from "firebase/auth";
-import {auth} from "../firebaseConfig"
+import {auth, db} from "../firebaseConfig"
 import {AuthContext} from "@/app/index";
 import Profile from "@/app/profile";
+import {doc, setDoc} from "@firebase/firestore";
 
 
 const Login = () => {
@@ -52,7 +53,8 @@ const Login = () => {
                     href={"/register"}
                     style={{marginBottom: 10}}
                 >
-                    <Text>Don't have an account? Create one</Text>
+                    <Text>Don't have an account? </Text>
+                    <Text style={{color: "red"}}>Create one</Text>
                 </Link>
                 <Button
                     title="Login"
