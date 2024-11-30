@@ -1,14 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { View, Text } from "react-native";
-import { db } from "../firebaseConfig";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
-import { Event } from "./types";
+import React, {useContext, useEffect, useState} from "react";
+import {Text, View} from "react-native";
+import {db} from "@/firebaseConfig";
+import {collection, getDocs, Timestamp} from "firebase/firestore";
+import {Event} from "./types";
+import {AuthContext} from "@/app/index";
+import Login from "@/app/login";
 
 export default function Events() {
-  
+  const isAuthenticated = useContext(AuthContext);
+  if(!isAuthenticated)
+    return <Login/>
+
   const [events, setEvents] = useState<Event[]>([]);
-  
-   async function fetchEvents(): Promise<Event[]> {
+
+  const fetchEvents = async (): Promise<Event[]> => {
     const eventsCollection = collection(db, "events");
     const eventsSnapshot = await getDocs(eventsCollection);
 
@@ -22,7 +27,7 @@ export default function Events() {
       };
       return event;
     });
-  }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +37,7 @@ export default function Events() {
     fetchData();
   }, []);
 
-  function formatDate(date: Timestamp): string {
+  const formatDate = (date: Timestamp): string => {
     return date.toDate().toLocaleString();
   }
 

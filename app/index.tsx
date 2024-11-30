@@ -1,41 +1,30 @@
-import { auth } from "@/firebaseConfig";
-import {ActivityIndicator, StyleSheet} from "react-native";
-import {router} from "expo-router";
-import React, {useEffect} from "react";
-import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
+import React, {useState} from "react";
+import {auth} from "@/firebaseConfig";
+import Profile from "@/app/profile";
+import Login from "@/app/login";
+import {onAuthStateChanged} from "@firebase/auth";
+
+export let AuthContext = React.createContext(true);
 
 const Index = () => {
-    useEffect(() => {
-        const checkAuth = async () => {
-            if (auth.currentUser == null)
-                router.replace("/login")
-            else
-                router.replace("/profile")
-        }
 
-        setTimeout(() => {
-            checkAuth();
-        }, 500)
-    }, [router])
+    const [isAuthenticated, setIsAuthenticated] = useState(true);
 
+    onAuthStateChanged(auth, (user) => {
+        setTimeout(() => {setIsAuthenticated(auth.currentUser != null)}, 0)
+    });
+
+    if (isAuthenticated)
+        return (
+            <AuthContext.Provider value={isAuthenticated}>
+                <Profile/>
+            </AuthContext.Provider>
+        );
     return (
-        <SafeAreaProvider>
-            <SafeAreaView style={[styles.container, styles.horizontal]}>
-                <ActivityIndicator size="large"></ActivityIndicator>
-            </SafeAreaView>
-        </SafeAreaProvider>)
+        <AuthContext.Provider value={isAuthenticated}>
+            <Login/>
+        </AuthContext.Provider>
+    );
 };
 
 export default Index;
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    horizontal: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
-    },
-})
