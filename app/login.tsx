@@ -24,7 +24,6 @@ const Login = () => {
                 signInWithEmailAndPassword(auth, email, password)
                     .catch((error) => {
                         const errorCode = error.code;
-                        const errorMessage = error.message;
 
                         if(errorCode == "auth/invalid-email")
                             setMessage("Va rugam introduceti un email valid!");
@@ -34,7 +33,7 @@ const Login = () => {
                             setMessage("Contul nu exista!");
                     });
             })
-            .catch((error) => {});
+            .catch(() => {});
     }
 
     return (

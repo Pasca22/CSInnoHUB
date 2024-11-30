@@ -10,7 +10,7 @@ import {auth} from "@/firebaseConfig";
 const Profile = () => {
     const isAuthenticated = useContext(AuthContext);
     if(!isAuthenticated)
-        return <Login></Login>
+        return <Login/>
 
     return (
         <SafeAreaView style={styles.container}>
