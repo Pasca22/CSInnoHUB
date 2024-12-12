@@ -108,14 +108,6 @@ export default function Events() {
             <Button
               title="Learn More"
               type="outline"
-              icon={
-                <Icon
-                  name="arrow-forward"
-                  size={20}
-                  color="#6a11cb"
-                  containerStyle={{ marginRight: 5 }}
-                />
-              }
               buttonStyle={styles.button}
               titleStyle={styles.buttonText}
             />
