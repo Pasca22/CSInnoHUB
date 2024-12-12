@@ -3,6 +3,7 @@ import Index from './index';
 import Profile from './profile';
 import Events from './events';
 import Register from "./register";
+import Mentors from "./mentors";
 import React, {useState} from "react";
 import {onAuthStateChanged} from "@firebase/auth";
 import {auth} from "@/firebaseConfig";
@@ -61,6 +62,14 @@ const AuthenticatedTabBar = () =>{
                 options={{
                     headerShown: false,
                     tabBarLabel: 'Events',
+                }}
+            />
+            <Tab.Screen
+                name="mentors"
+                component={Mentors}
+                options={{
+                    headerShown: false,
+                    tabBarLabel: 'Mentors',
                 }}
             />
         </Tab.Navigator>)
