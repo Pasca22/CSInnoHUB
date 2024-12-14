@@ -8,15 +8,8 @@ import { Card, Button, Text, Avatar } from "@rneui/themed";
 import { AuthContext } from "@/app/index";
 import Login from "@/app/login";
 
-// each mentor has:
-// 	    name : string;
-// 	    pictureURL : string;
-// 	    interests: string[];
-// 	    company : string;
-// 	    associationDate : Date;
-// 	    email : string;
 
-export default function Mentors() {
+const Mentors = () => {
     const isAuthenticated = useContext(AuthContext);
     if (!isAuthenticated) return <Login />;
 
@@ -155,3 +148,5 @@ const styles = StyleSheet.create({
         alignSelf: "center",
     },
 });
+
+export default Mentors;
