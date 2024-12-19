@@ -39,14 +39,31 @@ export default function Events() {
     });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const eventsList = await fetchEvents();
-      setEvents(eventsList);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+    useEffect(() => {
+  const fetchData = async () => {
+    const eventsList = await fetchEvents();
+    const sortedEvents = eventsList.sort(
+      (a, b) => a.date.toDate().getTime() - b.date.toDate().getTime()
+    );
+    const now = new Date();
+    const upcomingEvents = sortedEvents.filter(
+      event => event.date.toDate().getTime() > now.getTime()
+    );
+    const pastEvents = sortedEvents.filter(
+      event => event.date.toDate().getTime() <= now.getTime()
+    );
+
+    if (pastEvents.length > 0) {
+      const lastPastEvent = pastEvents[pastEvents.length - 1];
+      setEvents([...upcomingEvents, lastPastEvent]);
+    } else {
+      setEvents(upcomingEvents);
+    }
+    setLoading(false);
+  };
+  fetchData();
+}, []);
+
 
   const formatDate = (date: Timestamp): string => {
     return date.toDate().toLocaleString();
