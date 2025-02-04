@@ -24,9 +24,9 @@ const Mentors = () => {
             const mentor: Mentor = {
                 name: data.name,
                 pictureURL: data.pictureURL,
-                interests: data.interests,
+                title: data.title,
                 company: data.company,
-                associationDate: data.associationDate.toDate(),
+                interests: data.interests,
                 email: data.email,
             };
             return mentor;
@@ -41,17 +41,6 @@ const Mentors = () => {
         };
         fetchData();
     }, []);
-
-    const formatDate = (date: Date): string => {
-        return date.toLocaleDateString(
-            "en-US",
-            { 
-                year: "numeric", 
-                month: "long", 
-                day: "numeric" 
-            }
-        );
-    }
 
     if (loading) {
         return (
@@ -75,12 +64,15 @@ const Mentors = () => {
                                 source={{ uri: mentor.pictureURL }}
                                 containerStyle={styles.avatar}
                             />
+                            <Text style={styles.titleLabel}>{mentor.title}</Text>
                             <Text style={styles.infoLabel}>Interests</Text>
                             <Text>{mentor.interests.join(", ")}</Text>
-                            <Text style={styles.infoLabel}>Company</Text>
-                            <Text>{mentor.company}</Text>
-                            <Text style={styles.infoLabel}>Association date</Text>
-                            <Text>{formatDate(mentor.associationDate)}</Text>
+                            {mentor.company !== "None" && (
+                                <>
+                                    <Text style={styles.infoLabel}>Company</Text>
+                                    <Text>{mentor.company}</Text>
+                                </>
+                            )}
                             <Button
                                 title="Contact"
                                 buttonStyle={styles.button}
@@ -120,6 +112,12 @@ const styles = StyleSheet.create({
       fontSize: 16,
       marginTop: 12,
       fontWeight: "bold",
+    },
+    titleLabel: {
+        fontSize: 16,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 10,
     },
     button: {
       backgroundColor: "#6200EE",

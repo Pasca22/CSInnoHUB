@@ -10,8 +10,8 @@ export type Event = {
 export type Mentor = {
 	name : string;
 	pictureURL : string;
-	interests: string[];
+	title: string;
 	company : string;
-	associationDate : Date;
+	interests: string[];
 	email : string;
 };
