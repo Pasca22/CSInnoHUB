@@ -7,6 +7,7 @@ import Mentors from "./mentors";
 import React, {useState} from "react";
 import {onAuthStateChanged} from "@firebase/auth";
 import {auth} from "@/firebaseConfig";
+import Icon from 'react-native-vector-icons/FontAwesome5';
 
 const Tab = createBottomTabNavigator();
 
@@ -31,6 +32,9 @@ const NotAuthenticatedTabBar= () => {
                     component={Index}
                      options={{
                          tabBarLabel: "Login",
+                         tabBarIcon: ({ color, size }) => (
+                                <Icon name="sign-in-alt" color={color} size={size} />
+                            ),
                         headerShown: false
                     }}
                 />
@@ -40,6 +44,9 @@ const NotAuthenticatedTabBar= () => {
                     options={{
                      headerShown: false,
                      tabBarLabel: "Register",
+                        tabBarIcon: ({ color, size }) => (
+                            <Icon name="user-plus" color={color} size={size} />
+                        ),
                     }}
                 />
             </Tab.Navigator>)
@@ -54,6 +61,9 @@ const AuthenticatedTabBar = () =>{
                 options={{
                     headerShown: false,
                     tabBarLabel: 'Profile',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name="user" color={color} size={size} />
+                    ),
                 }}
             />
             <Tab.Screen
@@ -62,6 +72,9 @@ const AuthenticatedTabBar = () =>{
                 options={{
                     headerShown: false,
                     tabBarLabel: 'Events',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name="calendar-alt" color={color} size={size} />
+                    ),
                 }}
             />
             <Tab.Screen
@@ -70,6 +83,9 @@ const AuthenticatedTabBar = () =>{
                 options={{
                     headerShown: false,
                     tabBarLabel: 'Mentors',
+                    tabBarIcon: ({ color, size }) => (
+                        <Icon name="user-tie" color={color} size={size} />
+                    ),
                 }}
             />
         </Tab.Navigator>)

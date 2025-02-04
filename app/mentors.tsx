@@ -74,7 +74,8 @@ const Mentors = () => {
                                 </>
                             )}
                             <Button
-                                title="Contact"
+                                title="Send Email"
+                                icon={{ name: "email", color: "white" }}
                                 buttonStyle={styles.button}
                                 onPress={() => Linking.openURL(`mailto: ${mentor.email}`)}
                             />
