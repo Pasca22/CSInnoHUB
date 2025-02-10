@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { StyleSheet, ScrollView, ActivityIndicator, View } from "react-native";
+import { StyleSheet, ScrollView, ActivityIndicator, View, Linking } from "react-native";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { Event } from "./types";
@@ -29,41 +29,40 @@ export default function Events() {
 
     return eventsSnapshot.docs.map((doc) => {
       const data = doc.data();
-      const event: Event = {
+      return {
         title: data.title,
         description: data.description,
         date: data.date instanceof Timestamp ? data.date : new Timestamp(0, 0),
         location: data.location,
+        registrationLink: data.registrationLink || "",
       };
-      return event;
     });
   };
 
-    useEffect(() => {
-  const fetchData = async () => {
-    const eventsList = await fetchEvents();
-    const sortedEvents = eventsList.sort(
-      (a, b) => a.date.toDate().getTime() - b.date.toDate().getTime()
-    );
-    const now = new Date();
-    const upcomingEvents = sortedEvents.filter(
-      event => event.date.toDate().getTime() > now.getTime()
-    );
-    const pastEvents = sortedEvents.filter(
-      event => event.date.toDate().getTime() <= now.getTime()
-    );
+  useEffect(() => {
+    const fetchData = async () => {
+      const eventsList = await fetchEvents();
+      const sortedEvents = eventsList.sort(
+        (a, b) => a.date.toDate().getTime() - b.date.toDate().getTime()
+      );
+      const now = new Date();
+      const upcomingEvents = sortedEvents.filter(
+        (event) => event.date.toDate().getTime() > now.getTime()
+      );
+      const pastEvents = sortedEvents.filter(
+        (event) => event.date.toDate().getTime() <= now.getTime()
+      );
 
-    if (pastEvents.length > 0) {
-      const lastPastEvent = pastEvents[pastEvents.length - 1];
-      setEvents([...upcomingEvents, lastPastEvent]);
-    } else {
-      setEvents(upcomingEvents);
-    }
-    setLoading(false);
-  };
-  fetchData();
-}, []);
-
+      if (pastEvents.length > 0) {
+        const lastPastEvent = pastEvents[pastEvents.length - 1];
+        setEvents([...upcomingEvents, lastPastEvent]);
+      } else {
+        setEvents(upcomingEvents);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   const formatDate = (date: Timestamp): string => {
     return date.toDate().toLocaleString();
@@ -71,6 +70,12 @@ export default function Events() {
 
   const isUpcomingEvent = (date: Timestamp): boolean => {
     return date.toDate() > new Date();
+  };
+
+  const openRegistrationLink = (url: string) => {
+    if (url) {
+      Linking.openURL(url).catch((err) => console.error("Failed to open URL:", err));
+    }
   };
 
   if (loading) {
@@ -122,6 +127,23 @@ export default function Events() {
                 <Text style={styles.detailText}>{event.location}</Text>
               </View>
             </View>
+
+            {event.registrationLink ? (
+              <Button
+                type="solid"
+                icon={{
+                  name: "open-in-new",
+                  type: "material",
+                  size: 24,
+                  color: "white",
+                }}
+                onPress={() => openRegistrationLink(event.registrationLink)}
+                title="Register Now"
+                titleStyle={styles.registerText}
+                buttonStyle={styles.registerButton}
+              />
+            ) : null}
+
             <Button
               title="Learn More"
               type="outline"
@@ -139,55 +161,68 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    padding: 10,
+    padding: 20,
   },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#ffffff",
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: "#6200EE",
+    fontWeight: "500",
   },
   noEventsContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
   noEventsText: {
     marginTop: 10,
     fontSize: 16,
     color: "#BDBDBD",
+    fontWeight: "500",
   },
   cardContainer: {
-    borderRadius: 15,
-    padding: 15,
-    elevation: 3,
-    marginBottom: 15,
+    borderRadius: 12,
+    padding: 20,
+    elevation: 4,
+    marginBottom: 20,
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     textAlign: "center",
     color: "#6a11cb",
+    marginBottom: 10,
   },
   cardSubtitle: {
     flex: 1,
     marginLeft: 10,
     fontSize: 14,
     color: "#6a11cb",
+    fontWeight: "500",
   },
   badge: {
     position: "absolute",
     right: 0,
+    top: 0,
   },
   cardText: {
     marginTop: 10,
     fontSize: 14,
-    color: "#333",
+    color: "#555",
     textAlign: "justify",
+    lineHeight: 20,
   },
   details: {
     marginTop: 15,
@@ -196,24 +231,38 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 5,
+    marginBottom: 8,
   },
   detailText: {
-    marginLeft: 5,
+    marginLeft: 8,
     fontSize: 14,
     color: "#6a11cb",
+    fontWeight: "500",
   },
-   header: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 15,
   },
   button: {
     borderColor: "#6a11cb",
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 8,
+    paddingVertical: 10,
   },
   buttonText: {
     color: "#6a11cb",
+    fontWeight: "500",
+  },
+  registerButton: {
+    backgroundColor: "#6a11cb",
+    borderRadius: 8,
+    marginTop: 15,
+    paddingVertical: 12,
+  },
+  registerText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

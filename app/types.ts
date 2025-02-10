@@ -5,6 +5,7 @@ export type Event = {
 	description : string;
 	date : Timestamp;
 	location : string;
+	registrationLink : string;
 };
 
 export type Mentor = {
