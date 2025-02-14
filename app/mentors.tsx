@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, StyleSheet, Linking, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import { Mentor } from "./types";
-import { db } from "@/firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import { auth, db } from "@/firebaseConfig";
+import { collection, getDocs, setDoc, doc, getDoc } from "firebase/firestore";
 import { Card, Button, Text, Avatar } from "@rneui/themed";
 import { AuthContext } from "@/app/index";
 import Login from "@/app/login";
@@ -50,6 +50,20 @@ const Mentors = () => {
             </View>
         );
     }
+
+    const handleRequestMentorship = async (mentor: Mentor) => {
+        const requesterDoc = await getDoc(doc(db, "users", "" + auth.currentUser?.uid));
+        const requesterName = requesterDoc.data()?.nume;
+        setDoc(doc(db, "mentorship_requests", "" + new Date().getTime()), {
+            requester_uid: auth.currentUser?.uid,
+            requester_name: requesterName,
+            mentor_name: mentor.name,
+            timestamp: new Date(),
+            status: "pending",
+        });
+        alert("Request sent to " + mentor.name);
+    };
+
     return (
         <GestureHandlerRootView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
@@ -74,10 +88,9 @@ const Mentors = () => {
                                 </>
                             )}
                             <Button
-                                title="Send Email"
-                                icon={{ name: "email", color: "white" }}
+                                title="Request Mentorship"
                                 buttonStyle={styles.button}
-                                onPress={() => Linking.openURL(`mailto: ${mentor.email}`)}
+                                onPress={() => handleRequestMentorship(mentor)}
                             />
                         </Card>
                     </View>
@@ -90,9 +103,9 @@ const Mentors = () => {
 
 const styles = StyleSheet.create({
     container: {
-      flex: 1,
-      justifyContent: "center",
-      backgroundColor: "#f5f5f5",
+        flex: 1,
+        justifyContent: "center",
+        backgroundColor: "#f5f5f5",
     },
     card: {
         borderRadius: 15,
@@ -104,15 +117,15 @@ const styles = StyleSheet.create({
         width: 300,
     },
     cardTitle: {
-      fontSize: 20,
-      fontWeight: "bold",
-      textAlign: "center",
-      marginBottom: 10,
+        fontSize: 20,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 10,
     },
     infoLabel: {
-      fontSize: 16,
-      marginTop: 12,
-      fontWeight: "bold",
+        fontSize: 16,
+        marginTop: 12,
+        fontWeight: "bold",
     },
     titleLabel: {
         fontSize: 16,
@@ -121,10 +134,10 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     button: {
-      backgroundColor: "#6200EE",
-      borderRadius: 10,
-      marginTop: 15,
-      paddingVertical: 10,
+        backgroundColor: "#6200EE",
+        borderRadius: 10,
+        marginTop: 15,
+        paddingVertical: 10,
     },
     cardWrapper: {
         flexDirection: "row",
