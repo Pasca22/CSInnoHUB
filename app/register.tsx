@@ -1,12 +1,10 @@
 import React, {useState} from "react";
-import {Button, StyleSheet, Text, TextInput} from "react-native";
+import {Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {createUserWithEmailAndPassword} from "firebase/auth";
-import {auth, db} from "../firebaseConfig"
+import {auth, db} from "@/firebaseConfig"
 import {doc, setDoc} from "@firebase/firestore";
 import {Picker} from "@react-native-picker/picker";
-import DatePicker from "react-native-date-picker";
-
 
 const Register = () => {
 
@@ -15,102 +13,100 @@ const Register = () => {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [message, setMessage] = useState("");
-    const [specializare, setSpecializare] = useState("");
-    const [date, setDate] = useState(new Date());
-    const [open, setOpen] = useState(false);
+    const [department, setDepartment] = useState("");
+    const [admissionYear, setAdmissionYear] = useState("");
     const [interests, setInterests] = useState("");
+    const currentYear = new Date().getFullYear()
 
     const handleSignUp = () => {
         try {
-            if (validateName(name) == false)
+            if (!validateName(name))
                 throw new Error("auth/invalid-name")
-            if (specializare == "")
-                throw new Error("auth/invalid-major")
-
-            const interestsArray = interests.split(/,\s*/);
+            if (department === "")
+                throw new Error("auth/invalid-department")
 
             createUserWithEmailAndPassword(auth, email, password)
                 .then(() => {
                     setDoc(doc(db, "users", "" + auth.currentUser?.uid.toString()), {
                         auth_ref: auth.currentUser?.uid,
-                        nume: name.toString(),
-                        specializare: specializare,
-                        an_admitere: date,
-                        poza_url: null,
-                        interese: interestsArray,
+                        email: email.toString(),
+                        name: name.toString(),
+                        department: department,
+                        admission_year: admissionYear,
+                        profile_photo_url: null,
+                        interests: interests,
                     });
                 })
                 .catch((error) => {
                     const errorCode = error.code
 
-                    if(errorCode == "auth/invalid-email")
-                        setMessage("Va rugam introduceti un email valid!");
-                    else if(errorCode == "auth/missing-password")
-                        setMessage("Va rugam introduceti o parola!");
+                    if(errorCode === "auth/invalid-email")
+                        setMessage("Please enter a valid email address!");
+                    else if(errorCode === "auth/missing-password")
+                        setMessage("Please enter a valid password!");
                     else if(confirmPassword != password)
-                        setMessage("Parolele nu se potrivesc!");
-                    else if(errorCode == "auth/weak-password")
-                        setMessage("Parola trebuie sa aiba minim 8 caractere!");
+                        setMessage("Passwords do not match!");
+                    else if(errorCode === "auth/weak-password")
+                        setMessage("The password length must be above or equal to 8!");
                 })
         }
         catch (error) {
             // @ts-ignore
             const errorCode = error.message;
-
-            // console.log(errorCode)
-
+            
             if (errorCode === "auth/invalid-name")
-                setMessage("Va rugam sa introduceti un nume valid!");
-            else if(errorCode == "auth/invalid-major")
-                setMessage("Va rugam sa selectati o specializare!");
+                setMessage("Please enter a valid name!");
+            else if(errorCode === "auth/invalid-department")
+                setMessage("Please select your department!");
         }
     }
 
     return (
+        <ScrollView>
         <SafeAreaProvider>
             <SafeAreaView style={styles.container}>
-                <Text>Nume</Text>
+                <Text>Name</Text>
                 <TextInput style={styles.input} onChangeText={setName} value={name} />
                 <Text>Email</Text>
                 <TextInput style={styles.input} onChangeText={setEmail} value={email} />
-                <Text>Parola</Text>
+                <Text>Password</Text>
                 <TextInput
                     style={styles.input}
                     onChangeText={setPassword}
                     value={password}
                     secureTextEntry={true}
                 />
-                <Text>Confirmare parola</Text>
+                <Text>Confirm password</Text>
                 <TextInput
                     style={styles.input}
                     onChangeText={setConfirmPassword}
                     value={confirmPassword}
                     secureTextEntry={true}
                 ></TextInput>
-                <Text>Specializare</Text>
+                <Text>Department</Text>
                 <Picker
-                    style={{ height: 50, width: 250, marginBottom: 20, marginTop: 10 }}
-                    onValueChange={(itemValue, itemIndex) => { // @ts-ignore
-                        setSpecializare(itemValue)}}>
-                    <Picker.Item label="Selecteaza o specializare" value="" />
-                    <Picker.Item label="Informatica" value="Informatica" />
-                    <Picker.Item label="Matematica informatica" value="Matematica informatica" />
-                    <Picker.Item label="Inteligenta artificiala" value="Inteligenta artificiala" />
-                    <Picker.Item label="Ingineria informatiei" value="Ingineria informatiei" />
+                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 10 }}
+                    onValueChange={(itemValue) => { // @ts-ignore
+                        setDepartment(itemValue)}}>
+                    <Picker.Item label="Select your department" value="" />
+                    <Picker.Item label="Computer science" value="computer_science" />
+                    <Picker.Item label="Mathematics and computer science" value="mathematics_computer_science" />
+                    <Picker.Item label="Artificial intelligence" value="artificial_intelligence" />
+                    <Picker.Item label="Information Engineering" value="information_engineering" />
                 </Picker>
-                <Button title="Selecteaza anul admiterii" onPress={() => setOpen(true)} />
-                <DatePicker
-                    modal
-                    open={open}
-                    date={date}
-                    onConfirm={(selectedDate) => {
-                        setOpen(false);
-                        setDate(selectedDate);
-                    }}
-                    onCancel={() => setOpen(false)}
-                    mode="date" // or "time", "datetime"
-                />
-                <Text>Interese (separate prin virgula)</Text>
+                <Text>Admission year</Text>
+                <Picker
+                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 10 }}
+                    onValueChange={(itemValue) => { // @ts-ignore
+                        setAdmissionYear(itemValue)}}>
+                        <Picker.Item label="Select your admission year" value="" />
+                    {
+                        [...Array(currentYear - 1970 + 1)].map((_,i) =>
+                                <Picker.Item key={currentYear - i} label={(currentYear - i).toString()} value={(currentYear - i).toString()}/>
+                        )
+                    }
+                </Picker>
+                <Text>Interests (separated by comma)</Text>
                 <TextInput
                     style={styles.input}
                     onChangeText={setInterests}
@@ -122,22 +118,21 @@ const Register = () => {
                     onPress={handleSignUp}
                 />
                 <Text style={styles.statusMessage}>{message}</Text>
+
             </SafeAreaView>
         </SafeAreaProvider>
+</ScrollView>
     );
 };
 
 function validateName(name: string): boolean {
     name = name.trim()
-
-    if(name == "")
-        return false
-
     return /^[A-Za-z\s]+$/.test(name);
 }
 
 const styles = StyleSheet.create({
     container: {
+        marginTop: 20,
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
