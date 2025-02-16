@@ -1,14 +1,20 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity } from "react-native";
 import { FAB } from "react-native-elements";
-import MultiSelectComponent from "./utils/MultiSelectComponent";
-import TagInputComponent from "./utils/TagInputComponent";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
-import DatePickerComponent from "./utils/DatePickerComponent";
+import DatePicker from "@/components/DatePicker";
+import TagInput from "@/components/TagInput";
+import MultiSelectCustom from "@/components/MultiSelectCustom";
 
 const Projects = () => {
 	const [modalVisible, setModalVisible] = useState(false);
+	const [roleModalVisible, setRoleModalVisible] = useState(false);
+
 	const [projectName, setProjectName] = useState("");
+	const [description, setDescription] = useState("");
+	const [date, setDate] = useState(new Date());
+	const [tags, setTags] = useState<any[]>([]);
+	const [members, setMembers] = useState([]);
 
 	const dataForMembersDropdown = [
 		{ label: 'Item 1', value: '1' },
@@ -26,8 +32,20 @@ const Projects = () => {
 	};
 
 	const handleSaveProject = () => {
-		// TODO Save project to database ...
 		setModalVisible(false);
+		setRoleModalVisible(false);
+
+		// TODO: Save project to database
+	};
+
+	const handleNext = () => {
+		setModalVisible(false);
+		setRoleModalVisible(true);
+	};
+
+	const handleCancel = () => {
+		setModalVisible(false);
+		setRoleModalVisible(false);
 	};
 
 	return (
@@ -60,17 +78,67 @@ const Projects = () => {
 							placeholder="Description"
 							multiline
 							numberOfLines={4}
+							value={description}
+							onChangeText={setDescription}
 						/>
 						
-						<DatePickerComponent />
-
-						<TagInputComponent />
-
-						<MultiSelectComponent
-							data={dataForMembersDropdown}
-							placeholder="Select Members"
+						<DatePicker 
+							date={date}
+							setDate={setDate}
 						/>
 
+						<TagInput 
+							tags={tags}
+							setTags={setTags}
+						/>
+
+						<MultiSelectCustom
+							data={dataForMembersDropdown}
+							placeholder="Select Members"
+							selectedItems={members}
+							setSelectedItems={setMembers}
+						/>
+
+						<View style={styles.actionButtonsView}>
+							<TouchableOpacity 
+								onPress={handleNext} 
+								style={styles.actionButtons}
+							>
+								<Text style={styles.buttonText}>Next</Text>
+							</TouchableOpacity>
+							
+							<TouchableOpacity 
+								onPress={handleCancel}
+								style={styles.actionButtons}
+							>
+								<Text style={styles.buttonText}>Cancel</Text>
+							</TouchableOpacity>
+						</View>
+					</ScrollView>
+				</View>
+			</Modal>
+			<Modal
+				animationType="slide"
+				transparent={true}
+				visible={roleModalVisible}
+				onRequestClose={() => setModalVisible(false)}
+			>
+				<View style={styles.modalView}>
+					<ScrollView>
+						<Text style={styles.modalText}>Establish roles of the members</Text>
+
+						<View>
+							{members.map((member) => (
+								<View key={member}>
+									<Text>{member}</Text>
+									<TextInput
+										placeholder="Role"
+										style={styles.input}
+									/>
+								</View>
+							))}
+						</View>
+						
 						<View style={styles.actionButtonsView}>
 							<TouchableOpacity 
 								onPress={handleSaveProject} 
@@ -80,7 +148,7 @@ const Projects = () => {
 							</TouchableOpacity>
 							
 							<TouchableOpacity 
-								onPress={() => setModalVisible(false)} 
+								onPress={handleCancel}
 								style={styles.actionButtons}
 							>
 								<Text style={styles.buttonText}>Cancel</Text>

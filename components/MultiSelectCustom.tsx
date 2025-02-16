@@ -6,11 +6,11 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 interface MultiSelectComponentProps {
 	data: { label: string; value: string }[];
 	placeholder: string;
+	selectedItems: string[];
+	setSelectedItems: any;
 }
 
-function MultiSelectComponent({ data, placeholder }: MultiSelectComponentProps) {
-	const [selected, setSelected] = useState<string[]>([]);
-
+function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems }: MultiSelectComponentProps) {
 	const renderItem = (item: any) => {
 		return (
 			<View style={styles.item}>
@@ -42,10 +42,10 @@ function MultiSelectComponent({ data, placeholder }: MultiSelectComponentProps) 
 				labelField="label"
 				valueField="value"
 				placeholder={placeholder}
-				value={selected}
+				value={selectedItems}
 				search
 				searchPlaceholder="Search..."
-				onChange={(item) => { setSelected(item); }}
+				onChange={(item) => { setSelectedItems(item); }}
 				renderItem={renderItem}
 				renderSelectedItem={renderSelectedItem}
 			/>
@@ -53,7 +53,7 @@ function MultiSelectComponent({ data, placeholder }: MultiSelectComponentProps) 
 	);
 };
 
-export default MultiSelectComponent;
+export default MultiSelectCustom;
 
 const styles = StyleSheet.create({
 	container: { marginBottom: 20 },

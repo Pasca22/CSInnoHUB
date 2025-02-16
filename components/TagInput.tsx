@@ -1,10 +1,13 @@
 import AntDesign from '@expo/vector-icons/AntDesign';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, 
-    StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
-const TagInputComponent = () => {
-    const [tags, setTags] = useState<string[]>([]);
+interface TagInputProps {
+    tags: any[];
+    setTags: React.Dispatch<React.SetStateAction<any[]>>;
+  }
+
+function TagInput ({ tags, setTags }: TagInputProps) {
     const [text, setText] = useState('');
 
     const addTag = () => {
@@ -37,7 +40,7 @@ const TagInputComponent = () => {
                 </TouchableOpacity>
             </View>
             <View style={styles.tagContainer}>
-                {tags.map((tag, index) => (
+                {tags.map((tag: any, index: any) => (
                     <View key={index} style={styles.tagWrapper}>
                         <TouchableOpacity onPress={() => removeTag(index)} style={styles.tag}>
                             <Text style={styles.tagText}>{tag}</Text>
@@ -113,4 +116,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default TagInputComponent;
+export default TagInput;

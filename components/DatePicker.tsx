@@ -3,8 +3,7 @@ import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AntDesign } from '@expo/vector-icons';
 
-const DatePickerComponent = () => {
-    const [date, setDate] = useState(new Date());
+function DatePicker ({ date, setDate }: { date: any, setDate: (date: any) => void }) {
     const [show, setShow] = useState(false);
 
     const onDateChange = (_: any, selectedDate: any) => {
@@ -48,4 +47,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DatePickerComponent;
+export default DatePicker;
