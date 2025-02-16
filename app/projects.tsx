@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity } from "react-native";
 import { FAB } from "react-native-elements";
-import MultiSelectComponent from "./MultiSelectComponent";
-import TagInputComponent from "./TagInputComponent";
+import MultiSelectComponent from "./utils/MultiSelectComponent";
+import TagInputComponent from "./utils/TagInputComponent";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
-import DatePickerComponent from "./DatePickerComponent";
+import DatePickerComponent from "./utils/DatePickerComponent";
 
 const Projects = () => {
 	const [modalVisible, setModalVisible] = useState(false);
