@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet } from "react-native";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { Project } from "./types";
-import { Card, Text, Avatar, ListItem, Icon } from "@rneui/themed";
+import { Card, Text, Avatar, ListItem, Icon, Button } from "@rneui/themed";
 
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -49,49 +49,68 @@ const Projects = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {projects.map((project, index) => (
-        <Card key={index} containerStyle={styles.cardContainer}>
-          <Card.Title style={styles.cardTitle}>{project.name}</Card.Title>
-          <Card.Divider />
-          <View style={styles.founderContainer}>
-            <View style={styles.founderIcon}>
-              <Icon
-                name="crown"
-                type="material-community"
-                color="#FFD700"
-                size={30}
-              />
-            </View>
-            <Text style={styles.founderText}>
-              Founder: {users[project.founder.id] || "Unknown"}
-            </Text>
-          </View>
+      {projects.map((project, index) => {
+        const displayedMembers = project.members.slice(0, 3);
+        const hasMoreMembers = project.members.length > 3;
 
-          <Card.Divider />
-          <Text style={styles.sectionTitle}>Members</Text>
-          {project.members.length > 0 ? (
-            project.members.map((member, idx) => (
-              <ListItem key={idx} bottomDivider>
-                <Avatar
-                  rounded
-                  title={users[member.ref.id]?.charAt(0) || "?"}
-                  containerStyle={styles.avatar}
+        return (
+          <Card key={index} containerStyle={styles.cardContainer}>
+            <Card.Title style={styles.cardTitle}>{project.name}</Card.Title>
+            <Card.Divider />
+            <View style={styles.founderContainer}>
+              <View style={styles.founderIcon}>
+                <Icon
+                  name="crown"
+                  type="material-community"
+                  color="#FFD700"
+                  size={30}
                 />
-                <ListItem.Content>
-                  <ListItem.Title>
-                    {users[member.ref.id] || "Unknown"}
-                  </ListItem.Title>
-                  <ListItem.Subtitle>
-                    {member.role}
-                  </ListItem.Subtitle>
-                </ListItem.Content>
-              </ListItem>
-            ))
-          ) : (
-            <Text style={styles.noMembersText}>No members in this project</Text>
-          )}
-        </Card>
-      ))}
+              </View>
+              <Text style={styles.founderText}>
+                Founder: {users[project.founder.id] || "Unknown"}
+              </Text>
+            </View>
+
+            <Card.Divider />
+
+            <Text style={styles.sectionTitle}>
+              Members ({project.members.length})
+            </Text>
+            {displayedMembers.length > 0 ? (
+              displayedMembers.map((member, idx) => (
+                <ListItem key={idx} bottomDivider>
+                  <Avatar
+                    rounded
+                    title={users[member.ref.id]?.charAt(0) || "?"}
+                    containerStyle={styles.avatar}
+                  />
+                  <ListItem.Content>
+                    <ListItem.Title>
+                      {users[member.ref.id] || "Unknown"}
+                    </ListItem.Title>
+                    <ListItem.Subtitle>
+                      {member.role}
+                    </ListItem.Subtitle>
+                  </ListItem.Content>
+                </ListItem>
+              ))
+            ) : (
+              <Text style={styles.noMembersText}>No members in this project</Text>
+            )}
+
+            {hasMoreMembers && (
+              <Text style={styles.moreMembersText}>
+                {project.members.length - 3} more members...
+              </Text>
+            )}
+            <Button
+              title="Request to Join"
+              buttonStyle={styles.requestButton}
+              titleStyle={styles.requestButtonText}
+            />
+          </Card>
+        );
+      })}
     </ScrollView>
   );
 };
@@ -153,6 +172,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 14,
     color: "#999",
+  },
+  moreMembersText: {
+    textAlign: "center",
+    fontSize: 14,
+    color: "#6a11cb",
+    fontStyle: "italic",
+    marginTop: 5,
+  },
+  requestButton: {
+    backgroundColor: "#6200EE",
+    borderRadius: 8,
+    marginTop: 15,
+    paddingVertical: 12,
+  },
+  requestButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
 
