@@ -53,10 +53,26 @@ const Projects = () => {
         const displayedMembers = project.members.slice(0, 3);
         const hasMoreMembers = project.members.length > 3;
 
+        const startingDate = project.startingDate
+          ? project.startingDate.toDate().toLocaleDateString()
+          : "No start date";
+
         return (
           <Card key={index} containerStyle={styles.cardContainer}>
             <Card.Title style={styles.cardTitle}>{project.name}</Card.Title>
+            <View style={styles.detailsContainer}>
+              <Text style={styles.startingDateText}>
+                Starting Date: {startingDate}
+              </Text>
+              {project.description && (
+                <Text style={styles.descriptionText}>
+                  {project.description}
+                </Text>
+              )}
+            </View>
+
             <Card.Divider />
+
             <View style={styles.founderContainer}>
               <View style={styles.founderIcon}>
                 <Icon
@@ -85,7 +101,7 @@ const Projects = () => {
                     containerStyle={styles.avatar}
                   />
                   <ListItem.Content>
-                    <ListItem.Title>
+                    <ListItem.Title style={styles.memberName}>
                       {users[member.ref.id] || "Unknown"}
                     </ListItem.Title>
                     <ListItem.Subtitle>
@@ -138,15 +154,33 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
     color: "#6a11cb",
+    marginBottom: 15,
+  },
+  detailsContainer: {
+    marginBottom: 15,
+  },
+  startingDateText: {
+    fontSize: 16,
+    color: "#6a11cb",
+    fontWeight: "500",
+    marginBottom: 10,
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: "#555",
+    fontWeight: "500",
+    fontStyle: "italic",
   },
   founderContainer: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   founderIcon: {
     backgroundColor: "#6a11cb",
@@ -167,6 +201,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#6a11cb",
     marginBottom: 5,
+  },
+  memberName: {
+    color: "#333",
+    fontWeight: "500",
   },
   noMembersText: {
     textAlign: "center",

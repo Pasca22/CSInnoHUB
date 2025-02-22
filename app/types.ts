@@ -20,6 +20,8 @@ export type Mentor = {
 
 export type Project = {
 	name: string;
+	startingDate: Timestamp;
+	description: string;
 	founder: DocumentReference;
   	members: {
     	ref: DocumentReference;
