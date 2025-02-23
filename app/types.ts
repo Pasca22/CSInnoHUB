@@ -1,4 +1,5 @@
 import {Timestamp} from "firebase/firestore";
+import { DocumentReference } from "firebase/firestore";
 
 export type Event = {
 	title : string;
@@ -15,4 +16,15 @@ export type Mentor = {
 	company : string;
 	interests: string[];
 	email : string;
+};
+
+export type Project = {
+	name: string;
+	startingDate: Timestamp;
+	description: string;
+	founder: DocumentReference;
+  	members: {
+    	ref: DocumentReference;
+    	role: string;
+  	}[];
 };
