@@ -16,3 +16,17 @@ export type Mentor = {
 	interests: string[];
 	email : string;
 };
+
+export type ProjectMember = {
+	refToUser : string;
+	userName : string;
+	role : string;
+};
+
+export type Project = {
+	name : string;
+	description : string;
+	startingDate : Timestamp;
+	tags : string[];
+	members : ProjectMember[];
+};

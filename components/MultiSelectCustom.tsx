@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MultiSelect } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { ProjectMember } from '@/app/types';
 
 interface MultiSelectComponentProps {
-	data: { label: string; value: string }[];
+	data: { label: string; value: ProjectMember }[];
 	placeholder: string;
 	selectedItems: string[];
 	setSelectedItems: any;
@@ -38,7 +39,12 @@ function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems 
 				inputSearchStyle={styles.inputSearchStyle}
 				iconStyle={styles.iconStyle}
 				backgroundColor={'rgba(0,0,0,0.2)'}
-				data={data}
+				data={data.map((item) => {
+					return {
+						label: item.label,
+						value: JSON.stringify(item.value),
+					};
+				})}
 				labelField="label"
 				valueField="value"
 				placeholder={placeholder}

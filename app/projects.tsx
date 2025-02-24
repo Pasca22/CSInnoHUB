@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity } from "react-native";
 import { FAB } from "react-native-elements";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
+import { db } from "@/firebaseConfig";
+import { collection, getDocs } from "firebase/firestore";
+import { ProjectMember } from "./types";
 
 const Projects = () => {
 	const [modalVisible, setModalVisible] = useState(false);
@@ -14,18 +17,30 @@ const Projects = () => {
 	const [description, setDescription] = useState("");
 	const [date, setDate] = useState(new Date());
 	const [tags, setTags] = useState<any[]>([]);
-	const [members, setMembers] = useState([]);
+	const [members, setMembers] = useState<MembersDropdownDataType[]>([]);
+	const [selectedMembers, setSelectedMembers] = useState([]);
+	const [selectedRoles, setSelectedRoles] = useState<{ [key: string]: string }>({});
 
-	const dataForMembersDropdown = [
-		{ label: 'Item 1', value: '1' },
-		{ label: 'Item 2', value: '2' },
-		{ label: 'Item 3', value: '3' },
-		{ label: 'Item 4', value: '4' },
-		{ label: 'Item 5', value: '5' },
-		{ label: 'Item 6', value: '6' },
-		{ label: 'Item 7', value: '7' },
-		{ label: 'Item 8', value: '8' },
-	];
+	type MembersDropdownDataType = {
+		label: string,
+		value: ProjectMember
+	}
+
+	const fetchUsersForMembersDropdown = async (): Promise<{ label: string; value: ProjectMember; }[]> => {
+		const usersSnapshot = await getDocs(collection(db, "users"));
+		return usersSnapshot.docs.map((doc) => {
+			const data = doc.data();
+			const user: { label: string, value: ProjectMember } = {
+				label: data.name,
+				value: {
+					refToUser: doc.id,
+					userName: data.name,
+					role: "",
+				}
+			};
+			return user;
+		});
+	};
 
 	const handleAddProject = () => {
 		setModalVisible(true);
@@ -47,6 +62,14 @@ const Projects = () => {
 		setModalVisible(false);
 		setRoleModalVisible(false);
 	};
+
+	useEffect(() => {
+		const fetchData = async () => {
+			const membersList = await fetchUsersForMembersDropdown();
+			setMembers(membersList);
+		};
+		fetchData();
+	}, []);
 
 	return (
 		<GestureHandlerRootView style={styles.container}>
@@ -93,10 +116,10 @@ const Projects = () => {
 						/>
 
 						<MultiSelectCustom
-							data={dataForMembersDropdown}
+							data={members}
 							placeholder="Select Members"
-							selectedItems={members}
-							setSelectedItems={setMembers}
+							selectedItems={selectedMembers}
+							setSelectedItems={setSelectedMembers}
 						/>
 
 						<View style={styles.actionButtonsView}>
@@ -128,15 +151,25 @@ const Projects = () => {
 						<Text style={styles.modalText}>Establish roles of the members</Text>
 
 						<View>
-							{members.map((member) => (
-								<View key={member}>
-									<Text>{member}</Text>
-									<TextInput
-										placeholder="Role"
-										style={styles.input}
-									/>
-								</View>
-							))}
+							{selectedMembers.map((member) => {
+								let deserializedMember = JSON.parse(member);
+								return (
+									<View key={deserializedMember.refToUser}>
+										<Text>{deserializedMember.userName}</Text>
+										<TextInput
+											placeholder="Role"
+											style={styles.input}
+											value={selectedRoles[deserializedMember.refToUser]}
+											onChangeText={(text) => {	
+												setSelectedRoles((prevRoles) => ({
+													...prevRoles,
+													[deserializedMember.refToUser]: text,
+												}));
+											}}
+										/>
+									</View>
+								)
+							})}
 						</View>
 						
 						<View style={styles.actionButtonsView}>
