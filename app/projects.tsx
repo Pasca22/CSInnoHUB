@@ -6,7 +6,7 @@ import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
 import { db } from "@/firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc } from "firebase/firestore";
 import { ProjectMember } from "./types";
 
 const Projects = () => {
@@ -47,10 +47,26 @@ const Projects = () => {
 	};
 
 	const handleSaveProject = () => {
+		let membersList = selectedMembers.map((member) => {
+			let deserializedMember = JSON.parse(member);
+			return {
+				refToUser: deserializedMember.refToUser,
+				role: selectedRoles[deserializedMember.refToUser],
+			};
+		});
+
+		let project = {
+			name: projectName,
+			startingDate: date,
+			description: description,
+			keywords: tags.join(","),
+			members: membersList,
+		};
+
+		setDoc(doc(db, "projects", projectName), project);
+
 		setModalVisible(false);
 		setRoleModalVisible(false);
-
-		// TODO: Save project to database
 	};
 
 	const handleNext = () => {
