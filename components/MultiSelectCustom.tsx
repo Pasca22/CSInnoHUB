@@ -2,10 +2,9 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MultiSelect } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { ProjectMember } from '@/app/types';
 
 interface MultiSelectComponentProps {
-	data: { label: string; value: ProjectMember }[];
+	data: { label: string; value: any }[];
 	placeholder: string;
 	selectedItems: string[];
 	setSelectedItems: any;

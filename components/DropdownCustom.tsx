@@ -1,11 +1,9 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
-import AntDesign from '@expo/vector-icons/AntDesign';
-import { ProjectMember } from '@/app/types';
+import { StyleSheet, Text, View } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
 
 interface DropdownCustomComponentProps {
-	data: { label: string; value: ProjectMember }[];
+	data: { label: string; value: any }[];
 	placeholder: string;
 	selectedItem: string;
 	setSelectedItem: any;
