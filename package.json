@@ -5,13 +5,13 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
+    "android": "expo starteas --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "deploy": "gh-pages -t -d dist",
-    "predeploy": "expo export -p web"
+    "deploy": "expo -t -d dist",
+    "predeploy": "expo export -p web && eas update"
   },
   "jest": {
     "preset": "jest-expo"
