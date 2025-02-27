@@ -5,7 +5,7 @@ import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
 import { db } from "@/firebaseConfig";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc } from "firebase/firestore";
 import DropdownCustom from "@/components/DropdownCustom";
 
 interface AddProjectModalProps {
@@ -77,12 +77,12 @@ function AddProjectModal({ modalVisible, setModalVisible }: AddProjectModalProps
 		let membersList = selectedMembers.map((member) => {
 			let deserializedMember = JSON.parse(member);
 			return {
-				refToUser: deserializedMember.refToUser,
+				ref: doc(db, `users/${deserializedMember.refToUser}`),
 				role: selectedRoles[deserializedMember.refToUser],
 			};
 		});
 
-		let deserializedRefToFounder = JSON.parse(founder).refToUser;
+		let deserializedRefToFounder = doc(db, `users/${JSON.parse(founder).refToUser}`);
 
 		let project = {
 			name: projectName,
