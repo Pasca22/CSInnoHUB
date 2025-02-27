@@ -6,8 +6,9 @@ import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
 import { db } from "@/firebaseConfig";
-import { collection, doc, getDocs, setDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc } from "firebase/firestore";
 import { ProjectMember } from "./types";
+import DropdownCustom from "@/components/DropdownCustom";
 
 const Projects = () => {
 	const [modalVisible, setModalVisible] = useState(false);
@@ -20,6 +21,17 @@ const Projects = () => {
 	const [members, setMembers] = useState<MembersDropdownDataType[]>([]);
 	const [selectedMembers, setSelectedMembers] = useState([]);
 	const [selectedRoles, setSelectedRoles] = useState<{ [key: string]: string }>({});
+	const [founder, setFounder] = useState("");
+
+	const unsetAllFields = () => {
+		setProjectName("");
+		setDescription("");
+		setDate(new Date());
+		setTags([]);
+		setSelectedMembers([]);
+		setSelectedRoles({});
+		setFounder("");
+	};
 
 	type MembersDropdownDataType = {
 		label: string,
@@ -46,7 +58,7 @@ const Projects = () => {
 		setModalVisible(true);
 	};
 
-	const handleSaveProject = () => {
+	const handleSaveProject = async () => {
 		let membersList = selectedMembers.map((member) => {
 			let deserializedMember = JSON.parse(member);
 			return {
@@ -55,21 +67,37 @@ const Projects = () => {
 			};
 		});
 
+		let deserializedRefToFounder = JSON.parse(founder).refToUser;
+
 		let project = {
 			name: projectName,
 			startingDate: date,
 			description: description,
 			keywords: tags.join(","),
 			members: membersList,
+			founder: deserializedRefToFounder,
 		};
 
-		setDoc(doc(db, "projects", projectName), project);
+		// TODO validation
+			// founder: mandatory
+			// all roles: mandatory
+
+		await addDoc(collection(db, "projects"), project);
+
+		// TODO animation while saving and waiting for the modal to close
 
 		setModalVisible(false);
 		setRoleModalVisible(false);
+
+		unsetAllFields();
 	};
 
 	const handleNext = () => {
+		// TODO validation
+			// name: mandatory
+			// startingDate: in the future
+			// members: at least 1
+
 		setModalVisible(false);
 		setRoleModalVisible(true);
 	};
@@ -77,6 +105,8 @@ const Projects = () => {
 	const handleCancel = () => {
 		setModalVisible(false);
 		setRoleModalVisible(false);
+
+		unsetAllFields();
 	};
 
 	useEffect(() => {
@@ -165,6 +195,19 @@ const Projects = () => {
 				<View style={styles.modalView}>
 					<ScrollView>
 						<Text style={styles.modalText}>Establish roles of the members</Text>
+
+						<DropdownCustom
+							data={selectedMembers.map((member) => {
+								let deserializedMember = JSON.parse(member);
+								return {
+									label: deserializedMember.userName,
+									value: deserializedMember,
+								};
+							})}
+							placeholder="Select Founder"
+							selectedItem={founder}
+							setSelectedItem={setFounder}
+						/>
 
 						<View>
 							{selectedMembers.map((member) => {
