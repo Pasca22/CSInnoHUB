@@ -14,7 +14,7 @@ const Projects = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<Record<string, string>>({});
   const [modalVisible, setModalVisible] = useState(false);
-	const handleAddProject = () => { setModalVisible(true); };
+  const handleAddProject = () => { setModalVisible(true); };
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -136,15 +136,15 @@ const Projects = () => {
         })}
       </ScrollView>
       <FAB
-				icon={{ name: 'add', color: 'white' }}
-				placement="right"
-				color="#6200EE"
-				onPress={handleAddProject}/>
+        icon={{ name: 'add', color: 'white' }}
+        placement="right"
+        color="#6200EE"
+        onPress={handleAddProject}/>
 
-			<AddProjectModal
-				modalVisible={modalVisible}
-				setModalVisible={setModalVisible}
-			/>
+      <AddProjectModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+      />
     </GestureHandlerRootView>
   );
 };
