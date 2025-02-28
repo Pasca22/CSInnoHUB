@@ -28,3 +28,12 @@ export type Project = {
     	role: string;
   	}[];
 };
+
+export type MembersDropdownDataType = {
+	label: string,
+	value: {
+		refToUser : string;
+		userName : string;
+		role : string;
+	}
+}

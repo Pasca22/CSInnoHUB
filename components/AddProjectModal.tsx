@@ -7,6 +7,7 @@ import MultiSelectCustom from "@/components/MultiSelectCustom";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs, addDoc, doc } from "firebase/firestore";
 import DropdownCustom from "@/components/DropdownCustom";
+import { MembersDropdownDataType } from "@/app/types";
 
 interface AddProjectModalProps {
 	modalVisible: boolean;
@@ -33,15 +34,6 @@ function AddProjectModal({ modalVisible, setModalVisible }: AddProjectModalProps
 		setSelectedRoles({});
 		setFounder("");
 	};
-
-	type MembersDropdownDataType = {
-		label: string,
-		value: {
-			refToUser : string;
-			userName : string;
-			role : string;
-		}
-	}
 
 	const fetchUsersForMembersDropdown = async (): Promise<{ 
 		label: string; 
