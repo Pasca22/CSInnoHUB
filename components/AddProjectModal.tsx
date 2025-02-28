@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
@@ -26,6 +26,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	const [selectedMembers, setSelectedMembers] = useState([]);
 	const [selectedRoles, setSelectedRoles] = useState<{ [key: string]: string }>({});
 	const [founder, setFounder] = useState("");
+	const [loading, setLoading] = useState(false);
 
 	const unsetAllFields = () => {
 		setProjectName("");
@@ -68,6 +69,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	};
 
 	const handleSaveProject = async () => {
+		// Generate the members list
 		let membersList = selectedMembers.map((member) => {
 			let deserializedMember = JSON.parse(member);
 			return {
@@ -76,61 +78,93 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 			};
 		});
 
-		let deserializedRefToFounder = doc(db, `users/${JSON.parse(founder).refToUser}`);
-
+		// Validation
+		if (!founder) {
+			Alert.alert("No founder", "Please select the founder");
+			return;
+		} 
+		if (!membersList.every((member) => member.role)) {
+			Alert.alert("No roles", "Please assign roles to all members");
+			return;
+		}
+		
+		// Save the project to the database
 		let project : Project = {
 			name: projectName,
 			startingDate: Timestamp.fromDate(date),
 			description: description,
 			keywords: tags.join(","),
 			members: membersList,
-			founder: deserializedRefToFounder,
+			founder: doc(db, `users/${JSON.parse(founder).refToUser}`),
 		};
 
-		// TODO validation
-			// founder: mandatory
-			// all roles: mandatory
-
+		setLoading(true);
 		await addDoc(collection(db, "projects"), project);
-
-		// TODO animation while saving and waiting for the modal to close
-
-		// update the state
+		setLoading(false);
+			
 		setProjects([...projects, project]);
 
 		setModalVisible(false);
 		setRoleModalVisible(false);
 
-		unsetAllFields();
+		unsetAllFields();		
 	};
 
 	const handleNext = () => {
-		// TODO validation
-			// name: mandatory
-			// startingDate: in the future
-			// members: at least 1
+		// Validation
+		if (!projectName) {
+			Alert.alert("No project name", "Please fill the project name")
+			return;
+		} 
+		if (projects.some((existingProject) => existingProject.name === projectName)) {
+			Alert.alert("Project already exists", "Please choose a different name");
+			return;
+		} 
+		if (date < new Date()) {
+			Alert.alert("Invalid date", "Please select a future date")
+			return;
+		}
+		if (selectedMembers.length < 1) {
+			Alert.alert("No members", "Please select at least one member")
+			return;
+		}
 
+		// Proceed to the next step
 		setModalVisible(false);
 		setRoleModalVisible(true);
 	};
 
 	const handleCancel = () => {
+		// Close the modal and unset all fields
 		setModalVisible(false);
 		setRoleModalVisible(false);
 
 		unsetAllFields();
 	};
 
+	
 	useEffect(() => {
-		const fetchData = async () => {
+		const fetchMembers = async () => {
 			const membersList = await fetchUsersForMembersDropdown();
 			setMembers(membersList);
 		};
-		fetchData();
+		fetchMembers();
 	}, []);
 
+	if (loading) {
+		return (
+			<View style={styles.modalContainer}>
+				<ActivityIndicator size="large" color="#6200EE" />
+				<Text style={styles.loadingText}>Saving Project...</Text>
+			</View>
+		);
+	}
+
 	return (
-        <>
+		<View style={[
+			styles.modalContainer, 
+			{ display: modalVisible || roleModalVisible ? "flex" : "none" }
+		]}>
 			<Modal
 				animationType="slide"
 				transparent={true}
@@ -255,13 +289,26 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 					</ScrollView>
 				</View>
 			</Modal>
-        </>
+		</View>
 	);
 };
 
 const styles = StyleSheet.create({
+	modalContainer: {
+		flexDirection: "column",
+		justifyContent: "center",
+		position: "absolute",
+		top: 0,
+		left: 0,
+		width: "100%",
+		height: "100%",
+		backgroundColor: "rgba(0, 0, 0, 0.8)",
+	},
 	modalView: {
-		margin: 20,
+		marginTop: "auto",
+		marginBottom: "auto",
+		marginLeft: 20,
+		marginRight: 20,
 		backgroundColor: "white",
 		borderRadius: 20,
 		padding: 35,
@@ -318,6 +365,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
 	},
+	loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: "#6200EE",
+        alignSelf: "center",
+    },
 });
 
 export default AddProjectModal;

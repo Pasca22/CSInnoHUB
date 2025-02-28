@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { Project } from "./types";
@@ -48,6 +48,7 @@ const Projects = () => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#6200EE" />
         <Text style={styles.loadingText}>Loading Projects...</Text>
       </View>
     );
