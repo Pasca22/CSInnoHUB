@@ -5,16 +5,18 @@ import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
 import { db } from "@/firebaseConfig";
-import { collection, getDocs, addDoc, doc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, Timestamp } from "firebase/firestore";
 import DropdownCustom from "@/components/DropdownCustom";
-import { MembersDropdownDataType } from "@/app/types";
+import { MembersDropdownDataType, Project } from "@/app/types";
 
 interface AddProjectModalProps {
 	modalVisible: boolean;
     setModalVisible: (value: boolean) => void;
+	projects: Project[];
+	setProjects: (projects: Project[]) => void;
 }
 
-function AddProjectModal({ modalVisible, setModalVisible }: AddProjectModalProps) {
+function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects }: AddProjectModalProps) {
 	const [roleModalVisible, setRoleModalVisible] = useState(false);
 	const [projectName, setProjectName] = useState("");
 	const [description, setDescription] = useState("");
@@ -76,9 +78,9 @@ function AddProjectModal({ modalVisible, setModalVisible }: AddProjectModalProps
 
 		let deserializedRefToFounder = doc(db, `users/${JSON.parse(founder).refToUser}`);
 
-		let project = {
+		let project : Project = {
 			name: projectName,
-			startingDate: date,
+			startingDate: Timestamp.fromDate(date),
 			description: description,
 			keywords: tags.join(","),
 			members: membersList,
@@ -92,6 +94,9 @@ function AddProjectModal({ modalVisible, setModalVisible }: AddProjectModalProps
 		await addDoc(collection(db, "projects"), project);
 
 		// TODO animation while saving and waiting for the modal to close
+
+		// update the state
+		setProjects([...projects, project]);
 
 		setModalVisible(false);
 		setRoleModalVisible(false);

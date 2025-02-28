@@ -27,6 +27,7 @@ export type Project = {
     	ref: DocumentReference;
     	role: string;
   	}[];
+	keywords: string;
 };
 
 export type MembersDropdownDataType = {

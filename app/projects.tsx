@@ -144,6 +144,8 @@ const Projects = () => {
       <AddProjectModal
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
+        projects={projects}
+        setProjects={setProjects}
       />
     </GestureHandlerRootView>
   );
