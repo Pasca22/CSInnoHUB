@@ -12,6 +12,14 @@ interface MultiSelectComponentProps {
 
 function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems }: MultiSelectComponentProps) {
 	const renderItem = (item: any) => {
+		if (selectedItems.includes(item.value)) {
+			return (
+				<View style={styles.item}>
+					<Text style={styles.selectedTextStyle}>{item.label}</Text>
+					<AntDesign name="check" size={16} color="black" />
+				</View>
+			);
+		}
 		return (
 			<View style={styles.item}>
 				<Text style={styles.selectedTextStyle}>{item.label}</Text>
