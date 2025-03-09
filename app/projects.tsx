@@ -1,14 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { Project } from "./types";
 import { Card, Text, Avatar, ListItem, Icon, Button } from "@rneui/themed";
+import { FAB } from "react-native-elements";
+import AddProjectModal from "@/components/AddProjectModal";
+import { View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<Record<string, string>>({});
+  const [modalVisible, setModalVisible] = useState(false);
+  const handleAddProject = () => { setModalVisible(true); };
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -28,7 +34,7 @@ const Projects = () => {
 
       const userData: Record<string, string> = {};
       usersSnapshot.forEach((doc) => {
-        userData[doc.id] = doc.data().nume;
+        userData[doc.id] = doc.data().name;
       });
 
       setUsers(userData);
@@ -42,92 +48,107 @@ const Projects = () => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#6200EE" />
         <Text style={styles.loadingText}>Loading Projects...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {projects.map((project, index) => {
-        const displayedMembers = project.members.slice(0, 3);
-        const hasMoreMembers = project.members.length > 3;
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        {projects.map((project, index) => {
+          const displayedMembers = project.members.slice(0, 3);
+          const hasMoreMembers = project.members.length > 3;
 
-        const startingDate = project.startingDate
-          ? project.startingDate.toDate().toLocaleDateString()
-          : "No start date";
+          const startingDate = project.startingDate
+            ? project.startingDate.toDate().toLocaleDateString()
+            : "No start date";
 
-        return (
-          <Card key={index} containerStyle={styles.cardContainer}>
-            <Card.Title style={styles.cardTitle}>{project.name}</Card.Title>
-            <View style={styles.detailsContainer}>
-              <Text style={styles.startingDateText}>
-                Starting Date: {startingDate}
+          return (
+            <Card key={index} containerStyle={styles.cardContainer}>
+              <Card.Title style={styles.cardTitle}>{project.name}</Card.Title>
+              <View style={styles.detailsContainer}>
+                <Text style={styles.startingDateText}>
+                  Starting Date: {startingDate}
+                </Text>
+                {project.description && (
+                  <Text style={styles.descriptionText}>
+                    {project.description}
+                  </Text>
+                )}
+              </View>
+
+              <Card.Divider />
+
+              <View style={styles.founderContainer}>
+                <View style={styles.founderIcon}>
+                  <Icon
+                    name="crown"
+                    type="material-community"
+                    color="#FFD700"
+                    size={30}
+                  />
+                </View>
+                <Text style={styles.founderText}>
+                  Founder: {users[project.founder.id] || "Unknown"}
+                </Text>
+              </View>
+
+              <Card.Divider />
+
+              <Text style={styles.sectionTitle}>
+                Members ({project.members.length})
               </Text>
-              {project.description && (
-                <Text style={styles.descriptionText}>
-                  {project.description}
+              {displayedMembers.length > 0 ? (
+                displayedMembers.map((member, idx) => (
+                  <ListItem key={idx} bottomDivider>
+                    <Avatar
+                      rounded
+                      title={users[member.ref.id]?.charAt(0) || "?"}
+                      containerStyle={styles.avatar}
+                    />
+                    <ListItem.Content>
+                      <ListItem.Title style={styles.memberName}>
+                        {users[member.ref.id] || "Unknown"}
+                      </ListItem.Title>
+                      <ListItem.Subtitle>
+                        {member.role}
+                      </ListItem.Subtitle>
+                    </ListItem.Content>
+                  </ListItem>
+                ))
+              ) : (
+                <Text style={styles.noMembersText}>No members in this project</Text>
+              )}
+
+              {hasMoreMembers && (
+                <Text style={styles.moreMembersText}>
+                  {project.members.length - 3} more members...
                 </Text>
               )}
-            </View>
+              <Button
+                title="Request to Join"
+                buttonStyle={styles.requestButton}
+                titleStyle={styles.requestButtonText}
+              />
+            </Card>
+          );
+        })}
+      </ScrollView>
+      <FAB
+        icon={{ name: 'add', color: 'white' }}
+        placement="right"
+        color="#6200EE"
+        onPress={handleAddProject}/>
 
-            <Card.Divider />
-
-            <View style={styles.founderContainer}>
-              <View style={styles.founderIcon}>
-                <Icon
-                  name="crown"
-                  type="material-community"
-                  color="#FFD700"
-                  size={30}
-                />
-              </View>
-              <Text style={styles.founderText}>
-                Founder: {users[project.founder.id] || "Unknown"}
-              </Text>
-            </View>
-
-            <Card.Divider />
-
-            <Text style={styles.sectionTitle}>
-              Members ({project.members.length})
-            </Text>
-            {displayedMembers.length > 0 ? (
-              displayedMembers.map((member, idx) => (
-                <ListItem key={idx} bottomDivider>
-                  <Avatar
-                    rounded
-                    title={users[member.ref.id]?.charAt(0) || "?"}
-                    containerStyle={styles.avatar}
-                  />
-                  <ListItem.Content>
-                    <ListItem.Title style={styles.memberName}>
-                      {users[member.ref.id] || "Unknown"}
-                    </ListItem.Title>
-                    <ListItem.Subtitle>
-                      {member.role}
-                    </ListItem.Subtitle>
-                  </ListItem.Content>
-                </ListItem>
-              ))
-            ) : (
-              <Text style={styles.noMembersText}>No members in this project</Text>
-            )}
-
-            {hasMoreMembers && (
-              <Text style={styles.moreMembersText}>
-                {project.members.length - 3} more members...
-              </Text>
-            )}
-            <Button
-              title="Request to Join"
-              buttonStyle={styles.requestButton}
-              titleStyle={styles.requestButtonText}
-            />
-          </Card>
-        );
-      })}
-    </ScrollView>
+      <AddProjectModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        projects={projects}
+        setProjects={setProjects}
+      />
+    </GestureHandlerRootView>
   );
 };
 
