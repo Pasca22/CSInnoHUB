@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Alert, Linking } from "react-native";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import { Mentor } from "./types";
 import { auth, db } from "@/firebaseConfig";
-import { collection, getDocs, setDoc, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc } from "firebase/firestore";
 import { Card, Button, Text, Avatar } from "@rneui/themed";
 import { AuthContext } from "@/app/index";
 import Login from "@/app/login";
@@ -52,16 +52,15 @@ const Mentors = () => {
     }
 
     const handleRequestMentorship = async (mentor: Mentor) => {
-        const requesterDoc = await getDoc(doc(db, "users", "" + auth.currentUser?.uid));
-        const requesterName = requesterDoc.data()?.nume;
-        setDoc(doc(db, "mentorship_requests", "" + new Date().getTime()), {
-            requester_uid: auth.currentUser?.uid,
-            requester_name: requesterName,
-            mentor_name: mentor.name,
-            timestamp: new Date(),
-            status: "pending",
-        });
-        alert("Request sent to " + mentor.name);
+        if (!auth.currentUser) {
+            Alert.alert("Error", "Please log in to request mentorship.");
+            return;
+        }
+        const userDoc = doc(db, "users", auth.currentUser.uid);
+        let emailAddress = "csinnohub@cs.ubbcluj.ro";
+        let subject = "In-app mentorship request";
+        let body = `Hello!%0D%0AI would like to request mentorship from ${mentor.name}.%0D%0AHere is my contact information: ${auth.currentUser.email}.%0D%0AThank you!`;
+        Linking.openURL(`mailto:${emailAddress}?subject=${subject}&body=${body}`);
     };
 
     return (
