@@ -1,8 +1,13 @@
 import React, { useContext, useState } from "react";
-import { View, StyleSheet, TextInput } from "react-native";
+import {View, StyleSheet, TextInput, Modal} from "react-native";
 import { Card, Button, Text } from "@rneui/themed";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { browserLocalPersistence, setPersistence, signInWithEmailAndPassword } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  sendPasswordResetEmail,
+  setPersistence,
+  signInWithEmailAndPassword
+} from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import { AuthContext } from "@/app/index";
 import Profile from "@/app/profile";
@@ -16,22 +21,51 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
-  const handleSignIn = () => {
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        signInWithEmailAndPassword(auth, email, password).catch((error) => {
-          const errorCode = error.code;
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState("");
 
-          if (errorCode === "auth/invalid-email")
-            setMessage("Va rugam sa introduceti un email valid!");
-          else if (errorCode === "auth/missing-password")
-            setMessage("Va rugam sa introduceti o parola!");
-          else if (errorCode === "auth/invalid-credential")
-            setMessage("Contul nu exista!");
-        });
-      })
-      .catch(() => {});
+  const handleSignIn = () => {
+    const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (reg.test(email) === true) {
+      if(password != "") {
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+              signInWithEmailAndPassword(auth, email, password).catch((error) => {
+                const errorCode = error.code;
+
+                if (errorCode === "auth/invalid-credential")
+                  setMessage("An account with this credentials doesn't exists!");
+              });
+            })
+            .catch(() => {
+            });
+      }
+      else
+          setMessage("Password field cannot be empty!")
+    }
+    else
+      if(email === "")
+        setMessage("Email field cannot be empty!")
+      else setMessage("Please enter a valid email address!")
   };
+
+  const handleForgotPassword = () => {
+    const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (reg.test(forgotPasswordEmail) === true){
+      sendPasswordResetEmail(auth, forgotPasswordEmail)
+          .then(() => {
+            setForgotPasswordMessage("If an account with that email exists, you will receive " +
+                "a password reset link shortly. Please check your inbox and spam folder.")
+          })
+          .catch((error) => {});
+    }
+    else{
+      if(forgotPasswordEmail === "")
+        setForgotPasswordMessage("Email field cannot be empty!")
+      else setForgotPasswordMessage("Please enter a valid email address!");
+    }
+  }
 
   return (
     <SafeAreaProvider>
@@ -42,7 +76,7 @@ const Login = () => {
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
-            placeholder="Introduceti email-ul"
+            placeholder="Enter your email here"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -50,12 +84,12 @@ const Login = () => {
           <Text style={styles.label}>Password</Text>
           <TextInput
             style={styles.input}
-            placeholder="Introduceti parola"
+            placeholder="Enter your password here"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={true}
           />
-          {message ? <Text style={styles.errorMessage}>{message}</Text> : null}
+          <Text style={styles.errorMessage}>{message}</Text>
           <Button
             title="Login"
             buttonStyle={styles.button}
@@ -66,6 +100,30 @@ const Login = () => {
             <Link href={"/register"}>
               <Text style={styles.linkText}>Create one</Text>
             </Link>
+          </View>
+          <Modal visible={forgotPasswordVisible} animationType="slide" transparent>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.title}>Reset Password</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Enter your email address here"
+                    value={forgotPasswordEmail}
+                    onChangeText={setForgotPasswordEmail}
+                />
+                <Button title="Reset Password" onPress={() => {handleForgotPassword()}} />
+                <Button title="Cancel" onPress={() => {setForgotPasswordVisible(!forgotPasswordVisible)}} color="red" />
+                <Text style={{textAlign: "center", marginTop: 5, marginBottom: -5}}>{forgotPasswordMessage}</Text>
+              </View>
+            </View>
+          </Modal>
+          <View style={{alignItems: "flex-end"}}>
+            <button style={{background: "none", border: "none"}}
+              onClick={() => {
+                setForgotPasswordVisible(!forgotPasswordVisible);
+              }}>
+              <Text style={{color: "Black"}}>Forgot your password?</Text>
+            </button>
           </View>
         </Card>
       </SafeAreaView>
@@ -124,7 +182,34 @@ const styles = StyleSheet.create({
   errorMessage: {
     color: "#FF0000",
     textAlign: "center",
+    marginBottom: -5,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: 430,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 10,
+    textAlign: 'center',
+  },
+  inputModal: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
 });
 
