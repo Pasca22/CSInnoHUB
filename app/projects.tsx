@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
+import {ActivityIndicator, ScrollView, StyleSheet, TextInput} from "react-native";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { Project } from "./types";
@@ -10,11 +10,17 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const Projects = () => {
+
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<Record<string, string>>({});
   const [modalVisible, setModalVisible] = useState(false);
   const handleAddProject = () => { setModalVisible(true); };
+
+  const [filterTitle, setFilterTitle] = useState("");
+  const [filterKeywords, setFilterKeywords] = useState("");
+  const [toggleRerender, setToggleRerender] = useState(false);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -26,6 +32,7 @@ const Projects = () => {
       })) as Project[];
 
       setProjects(projectData);
+      setAllProjects(projectData);
     };
 
     const fetchUsers = async () => {
@@ -45,6 +52,24 @@ const Projects = () => {
     fetchUsers();
   }, []);
 
+  const filterProjects = () => {
+    let filtered = allProjects;
+
+    if (filterTitle !== "") {
+      filtered = filtered.filter((project) =>
+          project.name.toLowerCase().includes(filterTitle.toLowerCase())
+      );
+    }
+
+    if (filterKeywords !== "") {
+      filtered = filtered.filter((project) =>
+          project.keywords.toLowerCase().includes(filterKeywords.toLowerCase())
+      );
+    }
+
+    setProjects(filtered);
+  }
+
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -57,6 +82,20 @@ const Projects = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
+        <View style={styles.filterContainer}>
+          <TextInput style={styles.input} placeholder={"Enter title filter:"}
+                     placeholderTextColor="#888"
+                     onChangeText={setFilterTitle}
+                     value={filterTitle}>
+          </TextInput>
+          <TextInput style={styles.input} placeholder={"Enter keywords filter:"}
+                     placeholderTextColor="#888"
+                     onChangeText={setFilterKeywords}
+                     value={filterKeywords}></TextInput>
+          <Button onPress={() => {
+            filterProjects()
+          }}>Filter</Button>
+        </View>
         {projects.map((project, index) => {
           const displayedMembers = project.members.slice(0, 3);
           const hasMoreMembers = project.members.length > 3;
@@ -153,6 +192,23 @@ const Projects = () => {
 };
 
 const styles = StyleSheet.create({
+  filterContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 15,
+    gap: 5
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
