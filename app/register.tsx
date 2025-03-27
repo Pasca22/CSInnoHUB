@@ -19,6 +19,8 @@ const Register = () => {
     const currentYear = new Date().getFullYear()
 
     const handleSignUp = () => {
+        setMessage("");
+
         try {
             if (!validateName(name))
                 throw new Error("auth/invalid-name")
@@ -40,8 +42,12 @@ const Register = () => {
                 .catch((error) => {
                     const errorCode = error.code
 
+                    console.log(errorCode);
+
                     if(errorCode === "auth/invalid-email")
                         setMessage("Please enter a valid email address!");
+                    else if(errorCode === "auth/email-already-in-use")
+                        setMessage("An account with this email already exists!")
                     else if(errorCode === "auth/missing-password")
                         setMessage("Please enter a valid password!");
                     else if(confirmPassword != password)
