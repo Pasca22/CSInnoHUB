@@ -194,20 +194,20 @@ const Projects = () => {
 const styles = StyleSheet.create({
   filterContainer: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     padding: 15,
-    gap: 5
   },
   input: {
     flex: 1,
     height: 40,
-    marginVertical: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 5,
     padding: 10,
+    width: "100%",
   },
   container: {
     flex: 1,
