@@ -295,7 +295,8 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 const styles = StyleSheet.create({
 	modalContainer: {
-		flexDirection: "column",
+		display: "flex",
+		alignItems: "center",
 		justifyContent: "center",
 		position: "absolute",
 		top: 0,
@@ -305,10 +306,7 @@ const styles = StyleSheet.create({
 		backgroundColor: "rgba(0, 0, 0, 0.8)",
 	},
 	modalView: {
-		marginTop: "auto",
-		marginBottom: "auto",
-		marginLeft: 20,
-		marginRight: 20,
+		margin: "auto",
 		backgroundColor: "white",
 		borderRadius: 20,
 		padding: 35,
