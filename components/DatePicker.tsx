@@ -1,37 +1,49 @@
-import React, { useState } from 'react';
-import { Text, TouchableOpacity, StyleSheet } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { AntDesign } from '@expo/vector-icons';
+import AntDesign from "@expo/vector-icons/AntDesign";
+import React from "react";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { DatePickerModal, enGB, registerTranslation } from 'react-native-paper-dates';
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+registerTranslation("en", enGB);
 
 function DatePicker ({ date, setDate }: { date: any, setDate: (date: any) => void }) {
-    const [show, setShow] = useState(false);
+    const [open, setOpen] = React.useState(false);
 
-    const onDateChange = (_: any, selectedDate: any) => {
-        const currentDate = selectedDate;
-        setShow(false);
-        setDate(currentDate);
-    };
+  const onDismissSingle = React.useCallback(() => {
+    setOpen(false);
+  }, [setOpen]);
 
-    return (
-        <>
-            <TouchableOpacity onPress={() => setShow(true)} style={styles.container}>
-                <Text style={{ color: '#666' }}>
-                    Starting date: {date.toDateString()}
-                </Text>
-                <AntDesign name="calendar" size={24} color="#6200EE" />
-            </TouchableOpacity>
+  const onConfirmSingle = React.useCallback(
+    (params: any) => {
+      setOpen(false);
+      setDate(params.date);
+    },
+    [setOpen, setDate]
+  );
 
-            {show && (
-                <DateTimePicker
-                    testID="dateTimePicker"
-                    value={date}
-                    mode={'date'}
-                    is24Hour={true}
-                    onChange={onDateChange}
-                />
-            )}
-        </>
-    );
+  return (
+    <SafeAreaProvider>
+        <TouchableOpacity onPress={() => setOpen(true)} style={styles.container}>
+            <Text style={{ color: '#666' }}>
+                Starting date: {date.toDateString()}
+            </Text>
+            <AntDesign name="calendar" size={24} color="#6200EE" />
+        </TouchableOpacity>
+        <View style={{ justifyContent: 'center', flex: 1, alignItems: 'center' }}>
+            <DatePickerModal
+                locale="en"
+                mode="single"
+                visible={open}
+                onDismiss={onDismissSingle}
+                date={date}
+                onConfirm={onConfirmSingle}
+                saveLabel="Save"
+                label="Select date"
+                presentationStyle="overFullScreen"
+            />
+        </View>
+    </SafeAreaProvider>
+  )
 }
 
 const styles = StyleSheet.create({
@@ -44,7 +56,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        
     },
 });
+
 
 export default DatePicker;
