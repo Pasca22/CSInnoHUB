@@ -1,35 +1,40 @@
 import React, { useEffect, useState } from "react";
-import {ActivityIndicator, ScrollView, StyleSheet, TextInput} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from "react-native";
 import { db } from "@/firebaseConfig";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs } from "firebase/firestore";
 import { Project } from "./types";
 import { Card, Text, Avatar, ListItem, Icon, Button } from "@rneui/themed";
 import { FAB } from "react-native-elements";
 import AddProjectModal from "@/components/AddProjectModal";
+import RequestJoinModal from "@/components/RequestJoinModal";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { DocumentReference } from "firebase/firestore";
 
 const Projects = () => {
-
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<Record<string, string>>({});
   const [modalVisible, setModalVisible] = useState(false);
+  const [joinModalVisible, setJoinModalVisible] = useState(false);
+  const [selectedProjectRef, setSelectedProjectRef] = useState<DocumentReference | null>(null);
+
   const handleAddProject = () => { setModalVisible(true); };
 
   const [filterTitle, setFilterTitle] = useState("");
   const [filterKeywords, setFilterKeywords] = useState("");
-  const [toggleRerender, setToggleRerender] = useState(false);
 
   useEffect(() => {
     const fetchProjects = async () => {
       const projectsCollection = collection(db, "projects");
       const projectsSnapshot = await getDocs(projectsCollection);
 
-      const projectData: Project[] = projectsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-      })) as Project[];
+     const projectData: Project[] = projectsSnapshot.docs.map((doc) => ({
+            ...(doc.data() as Project),
+            projectRef: doc.ref,
+      }));
+
 
       setProjects(projectData);
       setAllProjects(projectData);
@@ -57,18 +62,24 @@ const Projects = () => {
 
     if (filterTitle !== "") {
       filtered = filtered.filter((project) =>
-          project.name.toLowerCase().includes(filterTitle.toLowerCase())
+        project.name.toLowerCase().includes(filterTitle.toLowerCase())
       );
     }
 
     if (filterKeywords !== "") {
       filtered = filtered.filter((project) =>
-          project.keywords.toLowerCase().includes(filterKeywords.toLowerCase())
+        project.keywords.toLowerCase().includes(filterKeywords.toLowerCase())
       );
     }
 
     setProjects(filtered);
-  }
+  };
+
+  const handleRequestJoin = (projectId: string) => {
+    const projectRef = doc(db, "projects", projectId);
+    setSelectedProjectRef(projectRef);
+    setJoinModalVisible(true);
+  };
 
   if (loading) {
     return (
@@ -83,23 +94,26 @@ const Projects = () => {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
         <View style={styles.filterContainer}>
-          <TextInput style={styles.input} placeholder={"Enter title filter:"}
-                     placeholderTextColor="#888"
-                     onChangeText={setFilterTitle}
-                     value={filterTitle}>
-          </TextInput>
-          <TextInput style={styles.input} placeholder={"Enter keywords filter:"}
-                     placeholderTextColor="#888"
-                     onChangeText={setFilterKeywords}
-                     value={filterKeywords}></TextInput>
-          <Button onPress={() => {
-            filterProjects()
-          }}>Filter</Button>
+          <TextInput
+            style={styles.input}
+            placeholder={"Enter title filter:"}
+            placeholderTextColor="#888"
+            onChangeText={setFilterTitle}
+            value={filterTitle}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={"Enter keywords filter:"}
+            placeholderTextColor="#888"
+            onChangeText={setFilterKeywords}
+            value={filterKeywords}
+          />
+          <Button onPress={filterProjects}>Filter</Button>
         </View>
+
         {projects.map((project, index) => {
           const displayedMembers = project.members.slice(0, 3);
           const hasMoreMembers = project.members.length > 3;
-
           const startingDate = project.startingDate
             ? project.startingDate.toDate().toLocaleDateString()
             : "No start date";
@@ -139,6 +153,7 @@ const Projects = () => {
               <Text style={styles.sectionTitle}>
                 Members ({project.members.length})
               </Text>
+
               {displayedMembers.length > 0 ? (
                 displayedMembers.map((member, idx) => (
                   <ListItem key={idx} bottomDivider>
@@ -151,9 +166,7 @@ const Projects = () => {
                       <ListItem.Title style={styles.memberName}>
                         {users[member.ref.id] || "Unknown"}
                       </ListItem.Title>
-                      <ListItem.Subtitle>
-                        {member.role}
-                      </ListItem.Subtitle>
+                      <ListItem.Subtitle>{member.role}</ListItem.Subtitle>
                     </ListItem.Content>
                   </ListItem>
                 ))
@@ -166,26 +179,36 @@ const Projects = () => {
                   {project.members.length - 3} more members...
                 </Text>
               )}
+
               <Button
                 title="Request to Join"
                 buttonStyle={styles.requestButton}
                 titleStyle={styles.requestButtonText}
+                onPress={() => handleRequestJoin(project.projectRef!.id)}
               />
             </Card>
           );
         })}
       </ScrollView>
+
       <FAB
-        icon={{ name: 'add', color: 'white' }}
+        icon={{ name: "add", color: "white" }}
         placement="right"
         color="#6200EE"
-        onPress={handleAddProject}/>
+        onPress={handleAddProject}
+      />
 
       <AddProjectModal
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         projects={projects}
         setProjects={setProjects}
+      />
+
+      <RequestJoinModal
+        visible={joinModalVisible}
+        onClose={() => setJoinModalVisible(false)}
+        projectId={selectedProjectRef}
       />
     </GestureHandlerRootView>
   );
