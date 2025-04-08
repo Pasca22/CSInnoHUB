@@ -35,8 +35,7 @@
       "expo-router"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "basedUrl": "/CSInnoHUB"
+      "typedRoutes": true
     },
     "extra": {
       "router": {
@@ -47,9 +46,7 @@
       }
     },
     "owner": "tudor.ileni",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/1f0da30c-a142-4090-940c-358f024fa5d5"
     }
