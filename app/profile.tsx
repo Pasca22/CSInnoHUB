@@ -31,11 +31,21 @@ const Profile = () => {
     const [changeEmailMessage, setChangeEmailMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
-    auth.onAuthStateChanged(() => {
-        fetchUserDetails();
-        if(auth.currentUser != null)
-            setLoading(false);
-    })
+    // auth.onAuthStateChanged(() => {
+    //     fetchUserDetails();
+    //     if(auth.currentUser != null)
+    //         setLoading(false);
+    // })
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(() => {
+            fetchUserDetails();
+            if (auth.currentUser != null)
+                setLoading(false);
+        });
+
+        // Cleanup on unmount
+        return () => unsubscribe();
+    }, []);
 
     useEffect(() => {
         fetchUserDetails();
