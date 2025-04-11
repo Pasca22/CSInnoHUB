@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from "react-native";
-import { db } from "@/firebaseConfig";
-import { collection, doc, getDocs } from "firebase/firestore";
-import { Project } from "./types";
-import { Card, Text, Avatar, ListItem, Icon, Button } from "@rneui/themed";
-import { FAB } from "react-native-elements";
+import React, {useEffect, useState} from "react";
+import {ActivityIndicator, ScrollView, StyleSheet, TextInput, View} from "react-native";
+import {auth, db} from "@/firebaseConfig";
+import {collection, doc, DocumentReference, getDocs} from "firebase/firestore";
+import {Project} from "./types";
+import {Avatar, Button, Card, Icon, ListItem, Text} from "@rneui/themed";
+import {FAB} from "react-native-elements";
 import AddProjectModal from "@/components/AddProjectModal";
 import RequestJoinModal from "@/components/RequestJoinModal";
-import { View } from "react-native";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { DocumentReference } from "firebase/firestore";
+import {GestureHandlerRootView} from "react-native-gesture-handler";
+import {onAuthStateChanged, User} from "firebase/auth";
 
 const Projects = () => {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -19,6 +18,14 @@ const Projects = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [joinModalVisible, setJoinModalVisible] = useState(false);
   const [selectedProjectRef, setSelectedProjectRef] = useState<DocumentReference | null>(null);
+  const [viewMode, setViewMode] = useState<'all' | 'my'>('all');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+  }, []);
 
   const handleAddProject = () => { setModalVisible(true); };
 
@@ -30,14 +37,13 @@ const Projects = () => {
       const projectsCollection = collection(db, "projects");
       const projectsSnapshot = await getDocs(projectsCollection);
 
-     const projectData: Project[] = projectsSnapshot.docs.map((doc) => ({
-            ...(doc.data() as Project),
-            projectRef: doc.ref,
+      const projectData: Project[] = projectsSnapshot.docs.map((doc) => ({
+        ...(doc.data() as Project),
+        projectRef: doc.ref,
       }));
 
-
-      setProjects(projectData);
       setAllProjects(projectData);
+      updateProjectsView(projectData, viewMode);
     };
 
     const fetchUsers = async () => {
@@ -57,8 +63,30 @@ const Projects = () => {
     fetchUsers();
   }, []);
 
+  const updateProjectsView = (projectsList: Project[], mode: 'all' | 'my') => {
+    if (mode === 'my' && currentUser) {
+      const myProjects = projectsList.filter(project =>
+        project.founder.id === currentUser.uid ||
+        project.members.some(member => member.ref.id === currentUser.uid)
+      );
+      setProjects(myProjects);
+    } else {
+      setProjects(projectsList);
+    }
+  };
+
+  const handleViewModeChange = (mode: 'all' | 'my') => {
+    setViewMode(mode);
+    updateProjectsView(allProjects, mode);
+  };
+
   const filterProjects = () => {
-    let filtered = allProjects;
+    let filtered = viewMode === 'my'
+      ? allProjects.filter(project =>
+          project.founder.id === currentUser?.uid ||
+          project.members.some(member => member.ref.id === currentUser?.uid)
+        )
+      : allProjects;
 
     if (filterTitle !== "") {
       filtered = filtered.filter((project) =>
@@ -93,6 +121,27 @@ const Projects = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ScrollView style={styles.container}>
+        <View style={styles.toggleContainer}>
+          <Button
+            title="All Projects"
+            onPress={() => handleViewModeChange('all')}
+            buttonStyle={[
+              styles.toggleButton,
+              viewMode === 'all' ? styles.activeToggle : styles.inactiveToggle
+            ]}
+            titleStyle={styles.toggleText}
+          />
+          <Button
+            title="My Projects"
+            onPress={() => handleViewModeChange('my')}
+            buttonStyle={[
+              styles.toggleButton,
+              viewMode === 'my' ? styles.activeToggle : styles.inactiveToggle
+            ]}
+            titleStyle={styles.toggleText}
+          />
+        </View>
+
         <View style={styles.filterContainer}>
           <TextInput
             style={styles.input}
@@ -215,6 +264,26 @@ const Projects = () => {
 };
 
 const styles = StyleSheet.create({
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 10,
+    gap: 10,
+  },
+  toggleButton: {
+    borderRadius: 20,
+    paddingHorizontal: 20,
+  },
+  activeToggle: {
+    backgroundColor: '#6200EE',
+  },
+  inactiveToggle: {
+    backgroundColor: '#cccccc',
+  },
+  toggleText: {
+    color: 'white',
+    fontWeight: '500',
+  },
   filterContainer: {
     flex: 1,
     flexDirection: "column",
