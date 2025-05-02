@@ -84,11 +84,11 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 		// Validation
 		if (!founder) {
-			Alert.alert("No founder", "Please select the founder");
+			alert("Please select the founder");
 			return;
 		} 
 		if (!membersList.every((member) => member.role)) {
-			Alert.alert("No roles", "Please assign roles to all members");
+			alert("Please assign roles to all members");
 			return;
 		}
 		
@@ -117,19 +117,19 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	const handleNext = () => {
 		// Validation
 		if (!projectName) {
-			Alert.alert("No project name", "Please fill the project name")
+			alert("Please fill the project name")
 			return;
 		} 
 		if (projects.some((existingProject) => existingProject.name === projectName)) {
-			Alert.alert("Project already exists", "Please choose a different name");
+			alert("Please choose a different name");
 			return;
 		} 
 		if (date < new Date()) {
-			Alert.alert("Invalid date", "Please select a future date")
+			alert("Please select a future date")
 			return;
 		}
 		if (selectedMembers.length < 1) {
-			Alert.alert("No members", "Please select at least one member")
+			alert("Please select at least one member")
 			return;
 		}
 

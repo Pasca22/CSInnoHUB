@@ -53,7 +53,7 @@ const Mentors = () => {
 
     const handleRequestMentorship = async (mentor: Mentor) => {
         if (!auth.currentUser) {
-            Alert.alert("Error", "Please log in to request mentorship.");
+            alert("Please log in to request mentorship.");
             return;
         }
         const userDoc = doc(db, "users", auth.currentUser.uid);
