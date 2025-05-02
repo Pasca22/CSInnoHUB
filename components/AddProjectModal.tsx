@@ -4,9 +4,8 @@ import { ScrollView } from "react-native-gesture-handler";
 import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
-import { db } from "@/firebaseConfig";
-import { collection, getDocs, addDoc, doc, Timestamp } from "firebase/firestore";
-import DropdownCustom from "@/components/DropdownCustom";
+import { auth, db } from "@/firebaseConfig";
+import { collection, getDocs, addDoc, doc, Timestamp, getDoc, DocumentReference } from "firebase/firestore";
 import { MembersDropdownDataType, Project } from "@/app/types";
 
 interface AddProjectModalProps {
@@ -25,7 +24,8 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	const [members, setMembers] = useState<MembersDropdownDataType[]>([]);
 	const [selectedMembers, setSelectedMembers] = useState([]);
 	const [selectedRoles, setSelectedRoles] = useState<{ [key: string]: string }>({});
-	const [founder, setFounder] = useState("");
+	const [founder, setFounder] = useState<DocumentReference>();
+	const [founderName, setFounderName] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	const unsetAllFields = () => {
@@ -35,7 +35,6 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		setTags([]);
 		setSelectedMembers([]);
 		setSelectedRoles({});
-		setFounder("");
 	};
 
 	const fetchUsersForMembersDropdown = async (): Promise<{ 
@@ -77,6 +76,11 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 				role: selectedRoles[deserializedMember.refToUser],
 			};
 		});
+		// Add the founder to the members list
+		membersList.push({
+			ref: founder as DocumentReference,
+			role: "Founder",
+		});
 
 		// Validation
 		if (!founder) {
@@ -95,7 +99,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 			description: description,
 			keywords: tags.join(","),
 			members: membersList,
-			founder: doc(db, `users/${JSON.parse(founder).refToUser}`),
+			founder: founder,
 		};
 
 		setLoading(true);
@@ -142,6 +146,19 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		unsetAllFields();
 	};
 
+	useEffect(() => {
+		const fetchFounder = async () => {
+			if (!auth.currentUser) return;
+			const userRef = doc(db, "users", auth.currentUser.uid);
+			setFounder(userRef);
+			const userData = await getDoc(userRef);
+			if (!userData.exists()) return;
+			const user = userData.data();
+			if (!user) return;
+			setFounderName(user.name);
+		};
+		fetchFounder();
+	}, []);
 	
 	useEffect(() => {
 		const fetchMembers = async () => {
@@ -236,20 +253,11 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 					<ScrollView>
 						<Text style={styles.modalText}>Establish roles of the members</Text>
 
-						<DropdownCustom
-							data={selectedMembers.map((member) => {
-								let deserializedMember = JSON.parse(member);
-								return {
-									label: deserializedMember.userName,
-									value: deserializedMember,
-								};
-							})}
-							placeholder="Select Founder"
-							selectedItem={founder}
-							setSelectedItem={setFounder}
-						/>
-
 						<View>
+							<View style={styles.founderView}>
+								<Text style={styles.founderLabel}>Founder:</Text>
+								<Text>{founderName}</Text>
+							</View>
 							{selectedMembers.map((member) => {
 								let deserializedMember = JSON.parse(member);
 								return (
@@ -369,6 +377,12 @@ const styles = StyleSheet.create({
         color: "#6200EE",
         alignSelf: "center",
     },
+	founderView: {
+		marginBottom: 15,
+	},
+	founderLabel: {
+		fontWeight: "bold",
+	},
 });
 
 export default AddProjectModal;
