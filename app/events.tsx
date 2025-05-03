@@ -1,20 +1,15 @@
-import React, { useContext, useEffect, useState } from "react";
-import { StyleSheet, ScrollView, ActivityIndicator, View, Linking } from "react-native";
-import { db } from "@/firebaseConfig";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
-import { Event } from "./types";
-import { AuthContext } from "@/app/index";
+import React, {useContext, useEffect, useState} from "react";
+import {ActivityIndicator, Linking, ScrollView, StyleSheet, View} from "react-native";
+import {auth, db} from "@/firebaseConfig";
+import {collection, doc, getDoc, getDocs, Timestamp} from "firebase/firestore";
+import {Event} from "./types";
+import {AuthContext} from "@/app/index";
 import Login from "@/app/login";
-import {
-  Text,
-  Icon,
-  Button,
-  Avatar,
-  Badge,
-  Divider,
-  Card,
-  LinearProgress,
-} from "@rneui/themed";
+import {Badge, Button, Card, Icon, LinearProgress, Text,} from "@rneui/themed";
+import {FAB} from "react-native-elements";
+import {GestureHandlerRootView} from "react-native-gesture-handler";
+import AddEventModal from "@/components/AddEventModal";
+import ReadMoreText from "@/components/ReadMore";
 
 export default function Events() {
   const isAuthenticated = useContext(AuthContext);
@@ -22,6 +17,32 @@ export default function Events() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      // Check if user is logged in
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user == null) return;
+
+        // Fetch user data from Firestore
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if(data["role"] != undefined)
+            setIsAdmin(true);
+        }
+      });
+
+      // Cleanup on unmount
+      return () => unsubscribe();
+    };
+
+    fetchUserRole(); // Call the async function
+  }, []);
 
   const fetchEvents = async (): Promise<Event[]> => {
     const eventsCollection = collection(db, "events");
@@ -30,7 +51,7 @@ export default function Events() {
     return eventsSnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        title: data.title,
+        name: data.name,
         description: data.description,
         date: data.date instanceof Timestamp ? data.date : new Timestamp(0, 0),
         location: data.location,
@@ -78,6 +99,10 @@ export default function Events() {
     }
   };
 
+  const handleAddEvent = () => {
+    setModalVisible(true);
+  }
+
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -89,6 +114,7 @@ export default function Events() {
   }
 
   return (
+      <GestureHandlerRootView style={{flex: 1}}>
     <ScrollView style={styles.container}>
       {events.length === 0 ? (
         <View style={styles.noEventsContainer}>
@@ -98,26 +124,14 @@ export default function Events() {
       ) : (
         events.map((event, index) => (
           <Card key={index} containerStyle={styles.cardContainer}>
-            <Card.Title style={styles.cardTitle}>{event.title}</Card.Title>
+            <Card.Title style={styles.cardTitle}>{event.name}</Card.Title>
             <Card.Divider />
-            <View style={styles.header}>
-              <Avatar
-                size="medium"
-                rounded
-                icon={{ name: "event", type: "material", color: "#fff" }}
-                containerStyle={{ backgroundColor: "#6a11cb" }}
-              />
-              <Text style={styles.cardSubtitle}>
-                {isUpcomingEvent(event.date) ? "Upcoming Event" : "Past Event"}
-              </Text>
-              <Badge
-                status={isUpcomingEvent(event.date) ? "success" : "warning"}
-                value={isUpcomingEvent(event.date) ? "Upcoming" : "Past"}
-                containerStyle={styles.badge}
-              />
-            </View>
-            <Text style={styles.cardText}>{event.description}</Text>
             <View style={styles.details}>
+              <Badge
+                  status={isUpcomingEvent(event.date) ? "success" : "warning"}
+                  value={isUpcomingEvent(event.date) ? "Upcoming" : "Past"}
+                  containerStyle={styles.badge}
+              />
               <View style={styles.detailRow}>
                 <Icon name="calendar-today" type="material" size={16} color="#6a11cb" />
                 <Text style={styles.detailText}>{formatDate(event.date)}</Text>
@@ -127,33 +141,37 @@ export default function Events() {
                 <Text style={styles.detailText}>{event.location}</Text>
               </View>
             </View>
-
+            <ReadMoreText style={styles.cardText} text={event.description}></ReadMoreText>
             {event.registrationLink ? (
               <Button
                 type="solid"
-                icon={{
-                  name: "open-in-new",
-                  type: "material",
-                  size: 24,
-                  color: "white",
-                }}
+                disabled={!isUpcomingEvent(event.date)}
                 onPress={() => openRegistrationLink(event.registrationLink)}
                 title="Register Now"
                 titleStyle={styles.registerText}
                 buttonStyle={styles.registerButton}
               />
             ) : null}
-
-            <Button
-              title="Learn More"
-              type="outline"
-              buttonStyle={styles.button}
-              titleStyle={styles.buttonText}
-            />
           </Card>
         ))
       )}
-    </ScrollView>
+      </ScrollView>
+        {isAdmin ? <FAB
+            icon={{ name: "add", color: "white" }}
+            placement="right"
+            color="#6200EE"
+            onPress={handleAddEvent}
+        /> : null}
+
+        {modalVisible ? (
+            <AddEventModal
+                modalVisible={modalVisible}
+                setModalVisible={setModalVisible}
+                events={events}
+                setEvents={setEvents}
+            ></AddEventModal>
+        ) : null}
+      </GestureHandlerRootView>
   );
 }
 
@@ -162,6 +180,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 20,
+    height: '100%'
   },
   loaderContainer: {
     flex: 1,
@@ -245,6 +264,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   button: {
+    marginTop: 10,
     borderColor: "#6a11cb",
     borderWidth: 1,
     borderRadius: 8,

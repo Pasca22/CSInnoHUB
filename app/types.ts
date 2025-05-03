@@ -2,7 +2,7 @@ import {Timestamp} from "firebase/firestore";
 import { DocumentReference } from "firebase/firestore";
 
 export type Event = {
-	title : string;
+	name : string;
 	description : string;
 	date : Timestamp;
 	location : string;
