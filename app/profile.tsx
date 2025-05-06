@@ -121,7 +121,7 @@ const Profile = () => {
             setChangeEmailMessage("");
             setEmail(auth.currentUser.email);
             updateUserDetails();
-        }catch (error){
+        }catch (error : any){
             const errorCode = error.code;
             console.log(errorCode);
 
