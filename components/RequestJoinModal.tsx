@@ -3,6 +3,7 @@ import { Modal, StyleSheet, TextInput, View } from "react-native";
 import { Button, Text } from "@rneui/themed";
 import {
   doc,
+  Timestamp,
   DocumentReference, getDoc, updateDoc,
 } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
@@ -54,6 +55,7 @@ const RequestJoinModal = ({
       {
         ref: userRef,
         role,
+        date:Timestamp.now(),
       },
     ];
 
@@ -66,7 +68,7 @@ const RequestJoinModal = ({
     onClose();
   } catch (error) {
     console.error("Error sending request:", error);
-    alert("Failed to send request.");
+    alert("Failed to send request."+(error as Error).message);
   } finally {
     setLoading(false);
   }
