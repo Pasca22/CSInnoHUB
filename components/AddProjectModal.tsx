@@ -123,10 +123,6 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		if (projects.some((existingProject) => existingProject.name === projectName)) {
 			alert("Please choose a different name");
 			return;
-		} 
-		if (date < new Date()) {
-			alert("Please select a future date")
-			return;
 		}
 		if (selectedMembers.length < 1) {
 			alert("Please select at least one member")
