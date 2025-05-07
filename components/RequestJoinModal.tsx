@@ -68,7 +68,7 @@ const RequestJoinModal = ({
     onClose();
   } catch (error) {
     console.error("Error sending request:", error);
-    alert("Failed to send request."+(error as Error).message);
+    alert("Failed to send request.");
   } finally {
     setLoading(false);
   }

@@ -2,11 +2,12 @@ import React, {useEffect, useState} from "react";
 import {ActivityIndicator, ScrollView, StyleSheet, TextInput, View} from "react-native";
 import {auth, db} from "@/firebaseConfig";
 import {collection, doc, DocumentReference, getDocs} from "firebase/firestore";
-import {Project} from "./types";
+import {Project, ProjectJoinRequest} from "./types";
 import {Avatar, Button, Card, Icon, ListItem, Text} from "@rneui/themed";
 import {FAB} from "react-native-elements";
 import AddProjectModal from "@/components/AddProjectModal";
 import RequestJoinModal from "@/components/RequestJoinModal";
+import ViewRequestsModal from "@/components/ViewRequestsModal";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
 import {onAuthStateChanged, User} from "firebase/auth";
 
@@ -20,6 +21,9 @@ const Projects = () => {
   const [selectedProjectRef, setSelectedProjectRef] = useState<DocumentReference | null>(null);
   const [viewMode, setViewMode] = useState<'all' | 'my'>('all');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [viewRequestsVisible, setViewRequestsVisible] = useState(false);
+  const [selectedProjectRequests, setSelectedProjectRequests] = useState<ProjectJoinRequest[]>([]);
+
 
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
@@ -109,6 +113,13 @@ const Projects = () => {
     setJoinModalVisible(true);
   };
 
+  const handleShowRequests = (requests: ProjectJoinRequest[], projectId:string) => {
+    const projectRef = doc(db, "projects", projectId);
+    setSelectedProjectRef(projectRef);
+    setSelectedProjectRequests(requests);
+    setViewRequestsVisible(true);
+  };
+
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -166,6 +177,10 @@ const Projects = () => {
           const startingDate = project.startingDate
             ? project.startingDate.toDate().toLocaleDateString()
             : "No start date";
+          const isMyTab = viewMode === 'my';
+          const hasPendingRequest = project.requests?.some(
+          (req) => req.ref.id === currentUser?.uid
+          );
 
           return (
             <Card key={index} containerStyle={styles.cardContainer}>
@@ -229,12 +244,30 @@ const Projects = () => {
                 </Text>
               )}
 
+              {isMyTab ? (
+              <>
+                  {hasPendingRequest ? (
+                        <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
+                         Pending Requests
+                        </Text>
+                  ):(
+                      <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
+                         No Pending Requests
+                      </Text>)}
+              <Button
+                title="Show Requests"
+                buttonStyle={styles.requestButton}
+                titleStyle={styles.requestButtonText}
+                onPress={() => handleShowRequests(project.requests || [],project.projectRef!.id)}
+              />
+              </>
+              ) : (
               <Button
                 title="Request to Join"
                 buttonStyle={styles.requestButton}
                 titleStyle={styles.requestButtonText}
                 onPress={() => handleRequestJoin(project.projectRef!.id)}
-              />
+              />)}
             </Card>
           );
         })}
@@ -258,6 +291,13 @@ const Projects = () => {
         visible={joinModalVisible}
         onClose={() => setJoinModalVisible(false)}
         projectId={selectedProjectRef}
+      />
+      <ViewRequestsModal
+        visible={viewRequestsVisible}
+        onClose={() => setViewRequestsVisible(false)}
+        requests={selectedProjectRequests}
+        users={users}
+        projectRef={selectedProjectRef}
       />
     </GestureHandlerRootView>
   );
