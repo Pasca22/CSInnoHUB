@@ -29,6 +29,13 @@ export type Project = {
   	}[];
 	keywords: string;
 	projectRef?: DocumentReference;
+	requests?: ProjectJoinRequest[];
+};
+
+export type ProjectJoinRequest = {
+	date: Timestamp;
+	ref: DocumentReference;
+	role: string;
 };
 
 export type MembersDropdownDataType = {
