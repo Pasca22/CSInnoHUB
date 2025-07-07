@@ -8,6 +8,7 @@ import {FAB} from "react-native-elements";
 import AddProjectModal from "@/components/AddProjectModal";
 import RequestJoinModal from "@/components/RequestJoinModal";
 import ViewRequestsModal from "@/components/ViewRequestsModal";
+import AddCompetencyModal from "@/components/AddCompetencyModal";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
 import {onAuthStateChanged, User} from "firebase/auth";
 
@@ -23,7 +24,10 @@ const Projects = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [viewRequestsVisible, setViewRequestsVisible] = useState(false);
   const [selectedProjectRequests, setSelectedProjectRequests] = useState<ProjectJoinRequest[]>([]);
-
+  const [, setCompetencyMap] = useState<Record<string, string>>({});
+  const [addCompetencyVisible, setAddCompetencyVisible] = useState(false);
+  const [currentProjectIdForCompetency, setCurrentProjectIdForCompetency] = useState<string | null>(null);
+  const [currentProjectCompetencies, setCurrentProjectCompetencies] = useState<string[]>([]);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
@@ -63,8 +67,19 @@ const Projects = () => {
       setLoading(false);
     };
 
+    const fetchCompetencies = async () => {
+      const snapshot = await getDocs(collection(db, "competencies"));
+      const map: Record<string, string> = {};
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        map[doc.id] = data.name;
+      });
+      setCompetencyMap(map);
+    };
+
     fetchProjects();
     fetchUsers();
+    fetchCompetencies();
   }, []);
 
   const updateProjectsView = (projectsList: Project[], mode: 'all' | 'my') => {
@@ -179,7 +194,7 @@ const Projects = () => {
             : "No start date";
           const isMyTab = viewMode === 'my';
           const hasPendingRequest = project.requests?.some(
-          (req) => req.ref.id === currentUser?.uid
+            (req) => req.ref.id === currentUser?.uid
           );
 
           return (
@@ -214,6 +229,46 @@ const Projects = () => {
 
               <Card.Divider />
 
+              <Text style={styles.sectionTitle}>Required Competencies</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {(project.competencies ?? []).length > 0 ? (
+                    (project.competencies ?? []).map((skill, idx) => (
+                    <Text
+                      key={idx}
+                      style={{
+                        backgroundColor: "#E0E0E0",
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 10,
+                        margin: 4,
+                        fontSize: 14,
+                        color: "#333",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {skill}
+                    </Text>
+                  ))
+                ) : (
+                  <Text style={{ fontStyle: "italic", color: "#888" }}>No competencies listed</Text>
+                )}
+              </View>
+
+              {currentUser?.uid === project.founder.id && isMyTab && (
+                <Button
+                  title="+ Add Competency"
+                  type="outline"
+                  buttonStyle={{ marginTop: 10, borderColor: "#6200EE" }}
+                  titleStyle={{ color: "#6200EE" }}
+                  onPress={() => {
+                    setCurrentProjectIdForCompetency(project.projectRef?.id || null);
+                    setCurrentProjectCompetencies(project.competencies ?? []);
+                    setAddCompetencyVisible(true);
+                  }}
+                />
+              )}
+              <Card.Divider />
+
               <Text style={styles.sectionTitle}>
                 Members ({project.members.length})
               </Text>
@@ -245,33 +300,44 @@ const Projects = () => {
               )}
 
               {isMyTab ? (
-              <>
+                <>
                   {hasPendingRequest ? (
-                        <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
-                         Pending Requests
-                        </Text>
-                  ):(
-                      <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
-                         No Pending Requests
-                      </Text>)}
-              <Button
-                title="Show Requests"
-                buttonStyle={styles.requestButton}
-                titleStyle={styles.requestButtonText}
-                onPress={() => handleShowRequests(project.requests || [],project.projectRef!.id)}
-              />
-              </>
+                    <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
+                      Pending Requests
+                    </Text>
+                  ) : (
+                    <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
+                      No Pending Requests
+                    </Text>
+                  )}
+                  <Button
+                    title="Show Requests"
+                    buttonStyle={styles.requestButton}
+                    titleStyle={styles.requestButtonText}
+                    onPress={() => handleShowRequests(project.requests || [], project.projectRef!.id)}
+                  />
+                </>
               ) : (
-              <Button
-                title="Request to Join"
-                buttonStyle={styles.requestButton}
-                titleStyle={styles.requestButtonText}
-                onPress={() => handleRequestJoin(project.projectRef!.id)}
-              />)}
+                <Button
+                  title="Request to Join"
+                  buttonStyle={styles.requestButton}
+                  titleStyle={styles.requestButtonText}
+                  onPress={() => handleRequestJoin(project.projectRef!.id)}
+                />
+              )}
             </Card>
           );
         })}
       </ScrollView>
+
+      {currentProjectIdForCompetency && (
+        <AddCompetencyModal
+            visible={addCompetencyVisible}
+            onClose={() => setAddCompetencyVisible(false)}
+            projectId={currentProjectIdForCompetency}
+            existingCompetencies={currentProjectCompetencies}
+        />
+      )}
 
       <FAB
         icon={{ name: "add", color: "white" }}
