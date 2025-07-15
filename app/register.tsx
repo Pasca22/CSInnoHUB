@@ -1,10 +1,11 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {createUserWithEmailAndPassword} from "firebase/auth";
 import {auth, db} from "@/firebaseConfig"
-import {doc, setDoc} from "@firebase/firestore";
+import {collection, doc, DocumentData, getDocs, setDoc} from "@firebase/firestore";
 import {Picker} from "@react-native-picker/picker";
+import MultiSelectCustom from "@/components/MultiSelectCustom";
 
 const Register = () => {
 
@@ -15,7 +16,8 @@ const Register = () => {
     const [message, setMessage] = useState("");
     const [department, setDepartment] = useState("");
     const [admissionYear, setAdmissionYear] = useState("");
-    const [interests, setInterests] = useState("");
+    const [interests, setInterests] = useState<string[]>([]);
+    const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
     const currentYear = new Date().getFullYear()
 
     const handleSignUp = () => {
@@ -36,7 +38,7 @@ const Register = () => {
                         department: department,
                         admission_year: admissionYear,
                         profile_photo_url: null,
-                        interests: interests,
+                        interests: selectedInterests,
                     });
                 })
                 .catch((error) => {
@@ -66,6 +68,18 @@ const Register = () => {
                 setMessage("Please select your department!");
         }
     }
+
+    useEffect(() => {
+        const fetchInterests = async () => {
+            const interestsSnapshot = await getDocs(collection(db, "competencies"));
+            const interestsList: string[] = [];
+            interestsSnapshot.forEach((doc: DocumentData) => {
+                interestsList.push(doc.data().name);
+            });
+            setInterests(interestsList);
+        };
+        fetchInterests();
+    }, []);
 
     return (
         <ScrollView>
@@ -112,12 +126,13 @@ const Register = () => {
                         )
                     }
                 </Picker>
-                <Text>Interests (separated by comma)</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setInterests}
-                    value={interests}
-                ></TextInput>
+                <Text>Interests</Text>
+                <MultiSelectCustom
+                    data={interests.map((interest) => ({ label: interest, value: interest }))}
+                    placeholder="Select Interests"
+                    selectedItems={selectedInterests}
+                    setSelectedItems={setSelectedInterests}
+                />
                 <Button
                     title="Register"
                     color="#f1243f"
