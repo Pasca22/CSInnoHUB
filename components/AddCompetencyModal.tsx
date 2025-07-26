@@ -10,6 +10,7 @@ interface Props {
   onClose: () => void;
   projectId: string;
   existingCompetencies: string[];
+  onCompetencyAdded: (newSkill: string) => void;
 }
 
 const AddCompetencyModal: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const AddCompetencyModal: React.FC<Props> = ({
   onClose,
   projectId,
   existingCompetencies,
+  onCompetencyAdded,
 }) => {
   const [allSkills, setAllSkills] = useState<string[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<string>("");
@@ -44,10 +46,11 @@ const AddCompetencyModal: React.FC<Props> = ({
     await updateDoc(projectRef, {
       competencies: arrayUnion(selectedSkill),
     });
+    onCompetencyAdded(selectedSkill);
 
     setSelectedSkill("");
     setShowSuggestions(false);
-    onClose();
+    //onClose();
   };
 
   return (

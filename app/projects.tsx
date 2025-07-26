@@ -336,6 +336,14 @@ const Projects = () => {
             onClose={() => setAddCompetencyVisible(false)}
             projectId={currentProjectIdForCompetency}
             existingCompetencies={currentProjectCompetencies}
+            onCompetencyAdded={(newSkill) => {
+            setProjects((prevProjects) =>
+                  prevProjects.map((p) => p.projectRef?.id === currentProjectIdForCompetency
+                      ? { ...p, competencies: [...(p.competencies || []), newSkill] }
+                      : p
+                  )
+                );
+              }}
         />
       )}
 
