@@ -2,6 +2,8 @@ import React, {useEffect, useState} from "react";
 import {ActivityIndicator, ScrollView, StyleSheet, TextInput, View} from "react-native";
 import {auth, db} from "@/firebaseConfig";
 import {collection, doc, DocumentReference, getDocs} from "firebase/firestore";
+import { updateDoc, arrayRemove } from "firebase/firestore";
+import { TouchableOpacity } from "react-native";
 import {Project, ProjectJoinRequest} from "./types";
 import {Avatar, Button, Card, Icon, ListItem, Text} from "@rneui/themed";
 import {FAB} from "react-native-elements";
@@ -135,6 +137,20 @@ const Projects = () => {
     setViewRequestsVisible(true);
   };
 
+  const handleDeleteCompetency = async (projectId: string, skill: string) => {
+    const projectRef = doc(db, "projects", projectId);
+    await updateDoc(projectRef, {
+      competencies: arrayRemove(skill),
+    });
+    setProjects(prev =>
+      prev.map(p =>
+        p.projectRef?.id === projectId
+          ? { ...p, competencies: (p.competencies || []).filter(c => c !== skill) }
+          : p
+      )
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -232,25 +248,45 @@ const Projects = () => {
               <Text style={styles.sectionTitle}>Required Competencies</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                 {(project.competencies ?? []).length > 0 ? (
-                    (project.competencies ?? []).map((skill, idx) => (
-                    <Text
+                  (project.competencies ?? []).map((skill, idx) => (
+                    <View
                       key={idx}
                       style={{
+                        flexDirection: "row",
+                        alignItems: "center",
                         backgroundColor: "#E0E0E0",
                         paddingHorizontal: 10,
                         paddingVertical: 5,
                         borderRadius: 10,
                         margin: 4,
-                        fontSize: 14,
-                        color: "#333",
-                        fontWeight: "500",
                       }}
                     >
-                      {skill}
-                    </Text>
+                      <Text style={{ fontSize: 14, color: "#333", fontWeight: "500" }}>
+                        {skill}
+                      </Text>
+                      {currentUser?.uid === project.founder.id && isMyTab && (
+                        <TouchableOpacity
+                          onPress={() =>
+                            handleDeleteCompetency(project.projectRef?.id || "", skill)
+                          }
+                        >
+                          <Text
+                            style={{
+                              marginLeft: 8,
+                              color: "red",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ×
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   ))
                 ) : (
-                  <Text style={{ fontStyle: "italic", color: "#888" }}>No competencies listed</Text>
+                  <Text style={{ fontStyle: "italic", color: "#888" }}>
+                    No competencies listed
+                  </Text>
                 )}
               </View>
 
