@@ -30,6 +30,7 @@ export type Project = {
 	keywords: string;
 	projectRef?: DocumentReference;
 	requests?: ProjectJoinRequest[];
+	competencies?: string[];
 };
 
 export type ProjectJoinRequest = {
