@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "111878987963",
+    "project_id": "csinnohub",
+    "storage_bucket": "csinnohub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:111878987963:android:2ca821847be4f69aa4099e",
+        "android_client_info": {
+          "package_name": "com.tudor.ileni.csinnohub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "111878987963-bulc3l79vepm5pptsi50tmfbsce2rd5d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQGrEIInn-6FhFO97Y6-VT_PwaaSvqAeM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "111878987963-bulc3l79vepm5pptsi50tmfbsce2rd5d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
