@@ -1,17 +1,15 @@
-import React, { useContext, useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Alert, Linking } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, ActivityIndicator, Linking } from "react-native";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import { Mentor } from "./types";
 import { auth, db } from "@/firebaseConfig";
 import { collection, getDocs, doc } from "firebase/firestore";
 import { Card, Button, Text, Avatar } from "@rneui/themed";
-import { AuthContext } from "@/app/index";
-import Login from "@/app/login";
 
 
 const Mentors = () => {
-    const isAuthenticated = useContext(AuthContext);
-    if (!isAuthenticated) return <Login />;
+    // const isAuthenticated = useContext(AuthContext);
+    // if (!isAuthenticated) return <Login />;
 
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [loading, setLoading] = useState(true);

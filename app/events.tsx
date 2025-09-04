@@ -3,8 +3,6 @@ import {ActivityIndicator, Linking, ScrollView, StyleSheet, View} from "react-na
 import {auth, db} from "@/firebaseConfig";
 import {collection, doc, getDoc, getDocs, Timestamp} from "firebase/firestore";
 import {Event} from "./types";
-import {AuthContext} from "@/app/index";
-import Login from "@/app/login";
 import {Badge, Button, Card, Icon, LinearProgress, Text,} from "@rneui/themed";
 import {FAB} from "react-native-elements";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
@@ -12,8 +10,8 @@ import AddEventModal from "@/components/AddEventModal";
 import ReadMoreText from "@/components/ReadMore";
 
 export default function Events() {
-  const isAuthenticated = useContext(AuthContext);
-  if (!isAuthenticated) return <Login />;
+  // const isAuthenticated = useContext(AuthContext);
+  // if (!isAuthenticated) return <Login />;
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);

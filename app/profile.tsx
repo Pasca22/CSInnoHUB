@@ -1,19 +1,17 @@
 import {SafeAreaView} from "react-native-safe-area-context";
 import {ActivityIndicator, Button, Modal, StyleSheet, Text, TextInput, View} from "react-native";
-import React, {useCallback, useContext, useEffect, useState} from "react";
-import {AuthContext} from "@/app/index";
-import Login from "@/app/login";
+import React, {useContext, useEffect, useState} from "react";
+import { AuthContext } from "@/app/AuthContext"; // <-- TO THIS
 import {EmailAuthProvider, reauthenticateWithCredential, signOut, updateEmail} from "@firebase/auth";
 import {auth, db} from "@/firebaseConfig";
 import {doc, getDoc} from "firebase/firestore";
 import {Picker} from "@react-native-picker/picker";
 import {setDoc} from "@firebase/firestore";
-import {useFocusEffect} from "expo-router";
 
 const Profile = () => {
-    const isAuthenticated = useContext(AuthContext);
-    if(!isAuthenticated)
-        return <Login/>
+    // const isAuthenticated = useContext(AuthContext);
+    // if(!isAuthenticated)
+    //     return <Login/>
 
     const [admissionYear, setAdmissionYear] = useState("");
     const [department, setDepartment] = useState("");

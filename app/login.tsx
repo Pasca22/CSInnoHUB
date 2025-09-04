@@ -3,19 +3,15 @@ import {View, StyleSheet, TextInput, Modal, TouchableOpacity } from "react-nativ
 import { Card, Button, Text } from "@rneui/themed";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import {
-  browserLocalPersistence,
   sendPasswordResetEmail,
-  setPersistence,
   signInWithEmailAndPassword
 } from "firebase/auth";
 import { auth } from "@/firebaseConfig";
-import { AuthContext } from "@/app/index";
-import Profile from "@/app/profile";
 import { Link } from "expo-router";
 
 const Login = () => {
-  const isAuthenticated = useContext(AuthContext);
-  if (isAuthenticated) return <Profile />;
+  // const isAuthenticated = useContext(AuthContext);
+  // if (isAuthenticated) return <Profile />;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,20 +25,15 @@ const Login = () => {
     const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
     if (reg.test(email) === true) {
       if(password != "") {
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-              signInWithEmailAndPassword(auth, email, password).catch((error) => {
-                const errorCode = error.code;
+        signInWithEmailAndPassword(auth, email, password).catch((error) => {
+          const errorCode = error.code;
 
-                if (errorCode === "auth/invalid-credential")
-                  setMessage("An account with this credentials doesn't exists!");
-              });
-            })
-            .catch(() => {
-            });
+          if (errorCode === "auth/invalid-credential")
+            setMessage("An account with this credentials doesn't exists!");
+        });
       }
       else
-          setMessage("Password field cannot be empty!")
+        setMessage("Password field cannot be empty!")
     }
     else
       if(email === "")
@@ -118,12 +109,6 @@ const Login = () => {
             </View>
           </Modal>
           <View style={{alignItems: "flex-end"}}>
-            {/*<button style={{background: "none", border: "none"}}*/}
-            {/*  onClick={() => {*/}
-            {/*    setForgotPasswordVisible(!forgotPasswordVisible);*/}
-            {/*  }}>*/}
-            {/*  <Text style={{color: "Black"}}>Forgot your password?</Text>*/}
-            {/*</button>*/}
             <TouchableOpacity
                 onPress={() => {
                   setForgotPasswordVisible(!forgotPasswordVisible);

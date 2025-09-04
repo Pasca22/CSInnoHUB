@@ -1,5 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Index from './index';
+// import Index from './index';
+import Login from './login'; // <-- ADD this import
+
 import Profile from './profile';
 import Events from './events';
 import Register from "./register";
@@ -29,7 +31,7 @@ const NotAuthenticatedTabBar = () => {
         <Tab.Navigator initialRouteName="index">
             <Tab.Screen
                 name="login"
-                component={Index}
+                component={Login}
                 options={{
                     tabBarLabel: "Login",
                     tabBarIcon: ({ color, size }) => (
