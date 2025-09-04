@@ -15,18 +15,20 @@ const firebaseConfig = {
     measurementId: "G-MJFFR5GB9N"
 };
 
-// --- Singleton Pattern for Firebase App Initialization ---
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// --- New Singleton Pattern for App Initialization (avoids getApps) ---
+let app;
+try {
+    app = getApp(); // Try to get the existing default app
+} catch (error) {
+    // If it fails, initialize the app for the first time
+    app = initializeApp(firebaseConfig);
+}
 
-// --- Singleton Pattern for Firebase Auth Initialization ---
-// We create a function that either gets the existing Auth instance
-// or initializes it with our custom persistence settings.
+// This function already uses a try/catch, so it's safe. No changes needed here.
 const getFirebaseAuth = () => {
     try {
-        // This will return the existing instance if it exists
         return getAuth(app);
     } catch (error) {
-        // This will only run on the first load when auth is not initialized
         if (Platform.OS === 'web') {
             return initializeAuth(app, {
                 persistence: browserLocalPersistence,

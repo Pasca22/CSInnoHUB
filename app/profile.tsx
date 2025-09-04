@@ -157,9 +157,8 @@ const Profile = () => {
                 </TextInput>
                 <Text>Email:</Text>
                 <TextInput
-                    style={[styles.input, styles.disableField]}
+                    style={[styles.input, styles.disableField,{ pointerEvents: "none" }]}
                     value={email}
-                    pointerEvents={"none"}
                     onChangeText={(email) => {setEmail(email)}}>
                 </TextInput>
                 <Text>Interests (separated by comma):</Text>
