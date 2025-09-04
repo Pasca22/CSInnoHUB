@@ -1,11 +1,9 @@
 import {initializeApp} from "firebase/app";
 import {getFirestore} from "firebase/firestore";
 
-// --- START: Platform-specific auth imports ---
 import { Platform } from 'react-native';
 import { initializeAuth, getReactNativePersistence, getAuth, browserLocalPersistence } from 'firebase/auth';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-// --- END: Platform-specific auth imports ---
 
 const firebaseConfig = {
     apiKey: "AIzaSyDEtwss431ze-h50U2w_oLkMSwNsr179s4",
@@ -17,25 +15,31 @@ const firebaseConfig = {
     measurementId: "G-MJFFR5GB9N"
 };
 
-const app = initializeApp(firebaseConfig);
+// --- Singleton Pattern for Firebase App Initialization ---
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// --- Singleton Pattern for Firebase Auth Initialization ---
+// We create a function that either gets the existing Auth instance
+// or initializes it with our custom persistence settings.
+const getFirebaseAuth = () => {
+    try {
+        // This will return the existing instance if it exists
+        return getAuth(app);
+    } catch (error) {
+        // This will only run on the first load when auth is not initialized
+        if (Platform.OS === 'web') {
+            return initializeAuth(app, {
+                persistence: browserLocalPersistence,
+            });
+        } else {
+            return initializeAuth(app, {
+                persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+            });
+        }
+    }
+};
+
+const auth = getFirebaseAuth();
 const db = getFirestore(app);
 
-// --- START: Conditional auth initialization ---
-let auth;
-
-if (Platform.OS === 'web') {
-    // Web-specific persistence
-    auth = initializeAuth(app, {
-        persistence: browserLocalPersistence,
-    });
-} else {
-    // Native-specific persistence
-    auth = initializeAuth(app, {
-        persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-    });
-}
-// --- END: Conditional auth initialization ---
-
-
-export { db };
-export { auth };
+export { db, auth };
