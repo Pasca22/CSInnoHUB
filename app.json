@@ -24,7 +24,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.tudor.ileni.csinnohub"
+      "package": "com.tudor.ileni.csinnohub",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",

@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import {View, StyleSheet, TextInput, Modal} from "react-native";
+import {View, StyleSheet, TextInput, Modal, TouchableOpacity } from "react-native";
 import { Card, Button, Text } from "@rneui/themed";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -8,7 +8,7 @@ import {
   setPersistence,
   signInWithEmailAndPassword
 } from "firebase/auth";
-import { auth } from "../firebaseConfig";
+import { auth } from "@/firebaseConfig";
 import { AuthContext } from "@/app/index";
 import Profile from "@/app/profile";
 import { Link } from "expo-router";
@@ -118,12 +118,18 @@ const Login = () => {
             </View>
           </Modal>
           <View style={{alignItems: "flex-end"}}>
-            <button style={{background: "none", border: "none"}}
-              onClick={() => {
-                setForgotPasswordVisible(!forgotPasswordVisible);
-              }}>
+            {/*<button style={{background: "none", border: "none"}}*/}
+            {/*  onClick={() => {*/}
+            {/*    setForgotPasswordVisible(!forgotPasswordVisible);*/}
+            {/*  }}>*/}
+            {/*  <Text style={{color: "Black"}}>Forgot your password?</Text>*/}
+            {/*</button>*/}
+            <TouchableOpacity
+                onPress={() => {
+                  setForgotPasswordVisible(!forgotPasswordVisible);
+                }}>
               <Text style={{color: "Black"}}>Forgot your password?</Text>
-            </button>
+            </TouchableOpacity>
           </View>
         </Card>
       </SafeAreaView>
