@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import {View, StyleSheet, TextInput, Modal, TouchableOpacity } from "react-native";
+import {View, StyleSheet, TextInput, Modal, TouchableOpacity, Platform } from "react-native";
 import { Card, Button, Text } from "@rneui/themed";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -131,10 +131,21 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 15,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: 'white',
+    ...Platform.select({
+          ios: {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          },
+          android: {
+            elevation: 5, // Elevation is the Android equivalent of shadow
+          },
+          web: {
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // boxShadow is the web equivalent
+          },
+    }),
   },
   cardTitle: {
     fontSize: 20,
