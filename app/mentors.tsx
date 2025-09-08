@@ -24,7 +24,7 @@ const Mentors = () => {
                 pictureURL: data.pictureURL,
                 title: data.title,
                 company: data.company,
-                interests: data.interests,
+                skills: data.skills || data.interests,
                 email: data.email,
             };
             return mentor;
@@ -76,8 +76,8 @@ const Mentors = () => {
                                 containerStyle={styles.avatar}
                             />
                             <Text style={styles.titleLabel}>{mentor.title}</Text>
-                            <Text style={styles.infoLabel}>Interests</Text>
-                            <Text>{mentor.interests.join(", ")}</Text>
+                            <Text style={styles.infoLabel}>Skills</Text>
+                            <Text>{mentor.skills.join(", ")}</Text>
                             {mentor.company !== "None" && (
                                 <>
                                     <Text style={styles.infoLabel}>Company</Text>

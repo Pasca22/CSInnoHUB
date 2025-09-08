@@ -15,7 +15,7 @@ const Register = () => {
     const [message, setMessage] = useState("");
     const [department, setDepartment] = useState("");
     const [admissionYear, setAdmissionYear] = useState("");
-    const [interests, setInterests] = useState("");
+    const [skills, setSkills] = useState("");
     const currentYear = new Date().getFullYear()
 
     const handleSignUp = () => {
@@ -36,7 +36,7 @@ const Register = () => {
                         department: department,
                         admission_year: admissionYear,
                         profile_photo_url: null,
-                        interests: interests,
+                        skills: skills,
                     });
                 })
                 .catch((error) => {
@@ -112,11 +112,11 @@ const Register = () => {
                         )
                     }
                 </Picker>
-                <Text>Interests (separated by comma)</Text>
+                <Text>Skills (separated by comma)</Text>
                 <TextInput
                     style={styles.input}
-                    onChangeText={setInterests}
-                    value={interests}
+                    onChangeText={setSkills}
+                    value={skills}
                 ></TextInput>
                 <Button
                     title="Register"

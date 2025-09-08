@@ -16,7 +16,7 @@ const Profile = () => {
     const [admissionYear, setAdmissionYear] = useState("");
     const [department, setDepartment] = useState("");
     const [email, setEmail] = useState("");
-    const [interests, setInterests] = useState("");
+    const [skills, setSkills] = useState("");
     const [name, setName] = useState("");
     const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
 
@@ -63,7 +63,7 @@ const Profile = () => {
                 setAdmissionYear(data["admission_year"] || "");
                 setDepartment(data["department"] || "");
                 setEmail(data["email"] || "");
-                setInterests(data["interests"] || "");
+                setSkills(data["skills"] || data["interests"] || "");
                 setName(data["name"] || "");
                 setProfilePhotoUrl(data["profile_photo_url"] || "");
             } else {
@@ -88,7 +88,7 @@ const Profile = () => {
                 department: department,
                 admission_year: admissionYear,
                 profile_photo_url: null,
-                interests: interests,
+                skills: skills,
             });
 
             setUpdateStatus(true);
@@ -161,11 +161,11 @@ const Profile = () => {
                     value={email}
                     onChangeText={(email) => {setEmail(email)}}>
                 </TextInput>
-                <Text>Interests (separated by comma):</Text>
+                <Text>Skills (separated by comma):</Text>
                 <TextInput
                     style={styles.input}
-                    value={interests}
-                    onChangeText={(interests) => {setInterests(interests)}}>
+                    value={skills}
+                    onChangeText={(skills) => {setSkills(skills)}}>
                 </TextInput>
                 <Text>Department</Text>
                 <Picker
