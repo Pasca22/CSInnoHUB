@@ -46,6 +46,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		}
 	}[]> => {
 		const usersSnapshot = await getDocs(collection(db, "users"));
+
 		return usersSnapshot.docs.map((doc) => {
 			const data = doc.data();
 			const user: { 
@@ -63,8 +64,9 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 					role: "",
 				}
 			};
+
 			return user;
-		});
+		}).filter(user => user.value.refToUser !== auth.currentUser?.uid); // Exclude the founder from the members list
 	};
 
 	const handleSaveProject = async () => {
@@ -76,6 +78,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 				role: selectedRoles[deserializedMember.refToUser],
 			};
 		});
+
 		// Add the founder to the members list
 		membersList.push({
 			ref: founder as DocumentReference,
@@ -217,7 +220,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 						<MultiSelectCustom
 							data={members}
 							placeholder="Select Members"
-							selectedItems={selectedMembers}
+							selectedItems={selectedMembers.filter(member => founder?.id != member["uid"])}
 							setSelectedItems={setSelectedMembers}
 						/>
 
