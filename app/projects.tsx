@@ -353,8 +353,8 @@ const Projects = () => {
                     onPress={() => handleShowRequests(project.requests || [], project.projectRef!.id)}
                   />
                 </>
-              ) : (
-                <Button
+              ) : (!(currentUser?.uid === project.founder.id) &&
+                 <Button
                   title="Request to Join"
                   buttonStyle={styles.requestButton}
                   titleStyle={styles.requestButtonText}
@@ -402,6 +402,7 @@ const Projects = () => {
         onClose={() => setJoinModalVisible(false)}
         projectId={selectedProjectRef}
       />
+
       <ViewRequestsModal
         visible={viewRequestsVisible}
         onClose={() => setViewRequestsVisible(false)}
