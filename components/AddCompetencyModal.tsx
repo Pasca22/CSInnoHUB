@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Button } from "@rneui/themed";
+import { Text, StyleSheet, TouchableOpacity } from "react-native";
 import { db } from "@/firebaseConfig";
 import { collection, getDocs, updateDoc, doc, arrayUnion } from "firebase/firestore";
 import Autocomplete from "react-native-autocomplete-input";
+
+// Import components from react-native-paper
+import { Button, Card, Modal, Portal, useTheme } from "react-native-paper";
 
 interface Props {
   visible: boolean;
@@ -14,30 +16,39 @@ interface Props {
 }
 
 const AddCompetencyModal: React.FC<Props> = ({
-  visible,
-  onClose,
-  projectId,
-  existingCompetencies,
-  onCompetencyAdded,
-}) => {
+                                               visible,
+                                               onClose,
+                                               projectId,
+                                               existingCompetencies,
+                                               onCompetencyAdded,
+                                             }) => {
   const [allSkills, setAllSkills] = useState<string[]>([]);
   const [selectedSkill, setSelectedSkill] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
-    const fetchSkills = async () => {
-      const snapshot = await getDocs(collection(db, "competencies"));
-      const skills = snapshot.docs.map((doc) => doc.data().name as string);
-      setAllSkills(skills);
-    };
-    fetchSkills();
-  }, []);
+    if (visible) {
+      const fetchSkills = async () => {
+        const snapshot = await getDocs(collection(db, "competencies"));
+        const skills = snapshot.docs.map((doc) => doc.data().name as string);
+        setAllSkills(skills);
+      };
+      fetchSkills();
+    } else {
+      // Reset state on close
+      setSelectedSkill("");
+      setShowSuggestions(false);
+    }
+  }, [visible]);
 
-  const filteredSkills = allSkills.filter(
-    (skill) =>
-      skill.toLowerCase().includes(selectedSkill.toLowerCase()) &&
-      !existingCompetencies.includes(skill)
-  );
+  const filteredSkills = selectedSkill
+      ? allSkills.filter(
+          (skill) =>
+              skill.toLowerCase().includes(selectedSkill.toLowerCase()) &&
+              !existingCompetencies.includes(skill)
+      )
+      : [];
 
   const handleAdd = async () => {
     if (!selectedSkill || existingCompetencies.includes(selectedSkill)) return;
@@ -47,79 +58,62 @@ const AddCompetencyModal: React.FC<Props> = ({
       competencies: arrayUnion(selectedSkill),
     });
     onCompetencyAdded(selectedSkill);
-
-    setSelectedSkill("");
-    setShowSuggestions(false);
-    //onClose();
+    onClose();
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Add Competency</Text>
-
-          <Autocomplete
-            data={showSuggestions ? filteredSkills : []}
-            value={selectedSkill}
-            onChangeText={(text) => {
-              setSelectedSkill(text);
-              setShowSuggestions(true);
-            }}
-            flatListProps={{
-              keyExtractor: (_, idx) => idx.toString(),
-              renderItem: ({ item }) => (
-                <TouchableOpacity
-                  style={styles.autocompleteItem}
-                  onPress={() => {
-                    setSelectedSkill(item);
-                    setShowSuggestions(false);
+      <Portal>
+        <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.modalContent}>
+          <Card>
+            <Card.Title title="Add Competency" />
+            <Card.Content>
+              {/* The Autocomplete component is preserved for its unique functionality */}
+              <Autocomplete
+                  data={showSuggestions ? filteredSkills : []}
+                  value={selectedSkill}
+                  onChangeText={(text) => {
+                    setSelectedSkill(text);
+                    setShowSuggestions(true);
                   }}
-                >
-                  <Text style={styles.autocompleteText}>{item}</Text>
-                </TouchableOpacity>
-              ),
-            }}
-            inputContainerStyle={styles.inputContainer}
-            listContainerStyle={styles.suggestionContainer}
-            placeholder="Search for a skill..."
-          />
-
-          <View style={styles.buttonRow}>
-            <Button title="Cancel" onPress={onClose} type="outline" />
-            <Button title="Add" onPress={handleAdd} disabled={!selectedSkill} />
-          </View>
-        </View>
-      </View>
-    </Modal>
+                  flatListProps={{
+                    keyExtractor: (_, idx) => idx.toString(),
+                    renderItem: ({ item }) => (
+                        <TouchableOpacity
+                            style={styles.autocompleteItem}
+                            onPress={() => {
+                              setSelectedSkill(item);
+                              setShowSuggestions(false);
+                            }}
+                        >
+                          <Text style={styles.autocompleteText}>{item}</Text>
+                        </TouchableOpacity>
+                    ),
+                  }}
+                  inputContainerStyle={styles.inputContainer}
+                  listContainerStyle={styles.suggestionContainer}
+                  placeholder="Search for a skill..."
+              />
+            </Card.Content>
+            <Card.Actions>
+              <Button onPress={onClose} textColor={theme.colors.error}>Cancel</Button>
+              <Button onPress={handleAdd} mode="contained" disabled={!selectedSkill}>Add</Button>
+            </Card.Actions>
+          </Card>
+        </Modal>
+      </Portal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  container: {
-    width: "90%",
-    backgroundColor: "white",
+  modalContent: {
     padding: 20,
-    borderRadius: 10,
-    elevation: 5,
-    maxHeight: "90%",
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#6200EE",
+    justifyContent: 'center',
   },
   inputContainer: {
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    paddingHorizontal: 8,
   },
   suggestionContainer: {
     maxHeight: 150,
@@ -136,11 +130,6 @@ const styles = StyleSheet.create({
   autocompleteText: {
     fontSize: 16,
     color: "#333",
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 25,
   },
 });
 

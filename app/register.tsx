@@ -1,13 +1,29 @@
-import React, {useState} from "react";
-import {Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
-import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {createUserWithEmailAndPassword} from "firebase/auth";
-import {auth, db} from "@/firebaseConfig"
-import {doc, setDoc} from "@firebase/firestore";
-import {Picker} from "@react-native-picker/picker";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "@/firebaseConfig";
+import { doc, setDoc } from "@firebase/firestore";
+
+// Import components from react-native-paper
+import {
+    Button,
+    Card,
+    Menu,
+    Text,
+    TextInput,
+    Title
+} from 'react-native-paper';
+
+// Helper for Department selection
+const departmentOptions = [
+    { label: "Computer Science", value: "computer_science" },
+    { label: "Mathematics & Computer Science", value: "mathematics_computer_science" },
+    { label: "Artificial Intelligence", value: "artificial_intelligence" },
+    { label: "Information Engineering", value: "information_engineering" }
+];
 
 const Register = () => {
-
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -16,151 +32,173 @@ const Register = () => {
     const [department, setDepartment] = useState("");
     const [admissionYear, setAdmissionYear] = useState("");
     const [interests, setInterests] = useState("");
-    const currentYear = new Date().getFullYear()
+
+    // State for Menu and Password visibility
+    const [departmentMenuVisible, setDepartmentMenuVisible] = useState(false);
+    const [admissionYearMenuVisible, setAdmissionYearMenuVisible] = useState(false);
+    const [isPasswordSecure, setIsPasswordSecure] = useState(true);
+    const [isConfirmPasswordSecure, setIsConfirmPasswordSecure] = useState(true);
+
+    const currentYear = new Date().getFullYear();
 
     const handleSignUp = () => {
         setMessage("");
 
-        try {
-            if (!validateName(name))
-                throw new Error("auth/invalid-name")
-            if (department === "")
-                throw new Error("auth/invalid-department")
-
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(() => {
-                    setDoc(doc(db, "users", "" + auth.currentUser?.uid.toString()), {
-                        auth_ref: auth.currentUser?.uid,
-                        email: email.toString(),
-                        name: name.toString(),
-                        department: department,
-                        admission_year: admissionYear,
-                        profile_photo_url: null,
-                        interests: interests,
-                    });
-                })
-                .catch((error) => {
-                    const errorCode = error.code
-
-                    console.log(errorCode);
-
-                    if(errorCode === "auth/invalid-email")
-                        setMessage("Please enter a valid email address!");
-                    else if(errorCode === "auth/email-already-in-use")
-                        setMessage("An account with this email already exists!")
-                    else if(errorCode === "auth/missing-password")
-                        setMessage("Please enter a valid password!");
-                    else if(confirmPassword != password)
-                        setMessage("Passwords do not match!");
-                    else if(errorCode === "auth/weak-password")
-                        setMessage("The password length must be above or equal to 8!");
-                })
+        // --- Improved Client-Side Validation ---
+        if (!validateName(name)) {
+            setMessage("Please enter a valid name!");
+            return;
         }
-        catch (error) {
-            // @ts-ignore
-            const errorCode = error.message;
-            
-            if (errorCode === "auth/invalid-name")
-                setMessage("Please enter a valid name!");
-            else if(errorCode === "auth/invalid-department")
-                setMessage("Please select your department!");
+        if (password !== confirmPassword) {
+            setMessage("Passwords do not match!");
+            return;
         }
-    }
+        if (department === "") {
+            setMessage("Please select your department!");
+            return;
+        }
+        if (admissionYear === "") {
+            setMessage("Please select your admission year!");
+            return;
+        }
+
+        createUserWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                // Use the user's UID from the successful creation response
+                setDoc(doc(db, "users", user.uid), {
+                    auth_ref: user.uid,
+                    email: email,
+                    name: name,
+                    department: department,
+                    admission_year: admissionYear,
+                    profile_photo_url: null,
+                    interests: interests,
+                });
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                if (errorCode === "auth/invalid-email") {
+                    setMessage("Please enter a valid email address!");
+                } else if (errorCode === "auth/email-already-in-use") {
+                    setMessage("An account with this email already exists!");
+                } else if (errorCode === "auth/weak-password") {
+                    setMessage("Password must be at least 6 characters long.");
+                } else {
+                    setMessage("An error occurred. Please try again.");
+                }
+            });
+    };
+
+    const getDepartmentLabel = (value: string) => {
+        return departmentOptions.find(option => option.value === value)?.label || "Select Department";
+    };
 
     return (
-        <ScrollView>
         <SafeAreaProvider>
-            <SafeAreaView style={styles.container}>
-                <Text>Name</Text>
-                <TextInput style={styles.input} onChangeText={setName} value={name} />
-                <Text>Email</Text>
-                <TextInput style={styles.input} onChangeText={setEmail} value={email} />
-                <Text>Password</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setPassword}
-                    value={password}
-                    secureTextEntry={true}
-                />
-                <Text>Confirm password</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setConfirmPassword}
-                    value={confirmPassword}
-                    secureTextEntry={true}
-                ></TextInput>
-                <Text>Department</Text>
-                <Picker
-                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 10 }}
-                    onValueChange={(itemValue) => { // @ts-ignore
-                        setDepartment(itemValue)}}>
-                    <Picker.Item label="Select your department" value="" />
-                    <Picker.Item label="Computer science" value="computer_science" />
-                    <Picker.Item label="Mathematics and computer science" value="mathematics_computer_science" />
-                    <Picker.Item label="Artificial intelligence" value="artificial_intelligence" />
-                    <Picker.Item label="Information Engineering" value="information_engineering" />
-                </Picker>
-                <Text>Admission year</Text>
-                <Picker
-                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 10 }}
-                    onValueChange={(itemValue) => { // @ts-ignore
-                        setAdmissionYear(itemValue)}}>
-                        <Picker.Item label="Select your admission year" value="" />
-                    {
-                        [...Array(currentYear - 1970 + 1)].map((_,i) =>
-                                <Picker.Item key={currentYear - i} label={(currentYear - i).toString()} value={(currentYear - i).toString()}/>
-                        )
-                    }
-                </Picker>
-                <Text>Interests (separated by comma)</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setInterests}
-                    value={interests}
-                ></TextInput>
-                <Button
-                    title="Register"
-                    color="#f1243f"
-                    onPress={handleSignUp}
-                />
-                <Text style={styles.statusMessage}>{message}</Text>
+            <ScrollView contentContainerStyle={styles.container}>
+                <Card style={styles.card}>
+                    <Card.Content>
+                        <Title style={styles.title}>Create Account</Title>
+                        <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" style={styles.inputSpacing} />
+                        <TextInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" mode="outlined" style={styles.inputSpacing} />
+                        <TextInput
+                            label="Password"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={isPasswordSecure}
+                            mode="outlined"
+                            style={styles.inputSpacing}
+                            right={<TextInput.Icon icon={isPasswordSecure ? "eye-off" : "eye"} onPress={() => setIsPasswordSecure(!isPasswordSecure)} />}
+                        />
+                        <TextInput
+                            label="Confirm Password"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry={isConfirmPasswordSecure}
+                            mode="outlined"
+                            style={styles.inputSpacing}
+                            right={<TextInput.Icon icon={isConfirmPasswordSecure ? "eye-off" : "eye"} onPress={() => setIsConfirmPasswordSecure(!isConfirmPasswordSecure)} />}
+                        />
 
-            </SafeAreaView>
+                        {/* Department Menu */}
+                        <Menu
+                            visible={departmentMenuVisible}
+                            onDismiss={() => setDepartmentMenuVisible(false)}
+                            anchor={
+                                <Button onPress={() => setDepartmentMenuVisible(true)} mode="outlined" icon="chevron-down" contentStyle={styles.menuAnchorButton} style={styles.inputSpacing}>
+                                    {getDepartmentLabel(department)}
+                                </Button>
+                            }>
+                            {departmentOptions.map(option => (
+                                <Menu.Item key={option.value} onPress={() => { setDepartment(option.value); setDepartmentMenuVisible(false); }} title={option.label} />
+                            ))}
+                        </Menu>
+
+                        {/* Admission Year Menu */}
+                        <Menu
+                            visible={admissionYearMenuVisible}
+                            onDismiss={() => setAdmissionYearMenuVisible(false)}
+                            anchor={
+                                <Button onPress={() => setAdmissionYearMenuVisible(true)} mode="outlined" icon="chevron-down" contentStyle={styles.menuAnchorButton} style={styles.inputSpacing}>
+                                    {admissionYear || "Select Admission Year"}
+                                </Button>
+                            }>
+                            <ScrollView style={{ maxHeight: 200 }}>
+                                {[...Array(currentYear - 1970 + 1)].map((_, i) => {
+                                    const year = (currentYear - i).toString();
+                                    return <Menu.Item key={year} onPress={() => { setAdmissionYear(year); setAdmissionYearMenuVisible(false); }} title={year} />;
+                                })}
+                            </ScrollView>
+                        </Menu>
+
+                        <TextInput label="Interests (comma separated)" value={interests} onChangeText={setInterests} mode="outlined" style={styles.inputSpacing} />
+
+                        {message ? <Text style={styles.statusMessage}>{message}</Text> : null}
+
+                        <Button mode="contained" onPress={handleSignUp} style={styles.button}>
+                            Register
+                        </Button>
+                    </Card.Content>
+                </Card>
+            </ScrollView>
         </SafeAreaProvider>
-</ScrollView>
     );
 };
 
 function validateName(name: string): boolean {
-    name = name.trim()
-    return /^[A-Za-z\s]+$/.test(name);
+    return /^[A-Za-z\s]+$/.test(name.trim());
 }
 
 const styles = StyleSheet.create({
     container: {
-        marginTop: 20,
-        flex: 1,
+        padding: 16,
         justifyContent: "center",
-        alignItems: "center",
+        backgroundColor: '#f5f5f5',
     },
-    input: {
+    card: {
+        width: '100%',
+    },
+    title: {
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    inputSpacing: {
+        marginBottom: 16,
+    },
+    menuAnchorButton: {
         height: 40,
-        width: 300,
-        margin: 12,
-        borderWidth: 1,
-        padding: 10,
+        justifyContent: 'center',
+    },
+    button: {
+        marginTop: 8,
+        paddingVertical: 4,
     },
     statusMessage: {
-        marginTop: 10,
-        color: "#f60000",
-    },
-    horizontal: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
+        textAlign: 'center',
+        color: "#B00020", // Paper's error color
+        marginBottom: 16,
     },
 });
-
-
 
 export default Register;
