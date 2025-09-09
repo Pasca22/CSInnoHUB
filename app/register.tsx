@@ -1,10 +1,13 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
 import {createUserWithEmailAndPassword} from "firebase/auth";
 import {auth, db} from "@/firebaseConfig"
 import {doc, setDoc} from "@firebase/firestore";
 import {Picker} from "@react-native-picker/picker";
+import { collection, getDocs } from "firebase/firestore";
+import { View, TouchableOpacity } from "react-native";
+import Autocomplete from "react-native-autocomplete-input";
 
 const Register = () => {
 
@@ -15,8 +18,38 @@ const Register = () => {
     const [message, setMessage] = useState("");
     const [department, setDepartment] = useState("");
     const [admissionYear, setAdmissionYear] = useState("");
-    const [interests, setInterests] = useState("");
+    const [skills, setSkills] = useState<string[]>([]);
     const currentYear = new Date().getFullYear()
+
+    const [skillsMap, setSkillsMap] = useState<Record<string, string>>({});
+    const [allSkills, setAllSkills] = useState<string[]>([]);
+    const [selectedSkill, setSelectedSkill] = useState<string>("");
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    
+    useEffect(() => {
+    const fetchSkills = async () => {
+      const snapshot = await getDocs(collection(db, "skills"));
+      const skills = snapshot.docs.map((doc) => doc.data().name as string);
+      setAllSkills(skills);
+    };
+    fetchSkills();
+  }, []);
+    
+    const filteredSkills = selectedSkill === '' ? [] : allSkills.filter(
+        (skill) =>
+            skill.toLowerCase().includes(selectedSkill.toLowerCase()) &&
+            !skills.includes(skill)
+    );
+    
+    const handleAdd = async () => {
+        if (!selectedSkill || 
+            skills.includes(selectedSkill)) return;
+
+        setSkills([...skills, selectedSkill]);
+
+        setSelectedSkill("");
+        setShowSuggestions(false);
+      };
 
     const handleSignUp = () => {
         setMessage("");
@@ -36,7 +69,7 @@ const Register = () => {
                         department: department,
                         admission_year: admissionYear,
                         profile_photo_url: null,
-                        interests: interests,
+                        skills: skills.join(", "),
                     });
                 })
                 .catch((error) => {
@@ -66,6 +99,10 @@ const Register = () => {
                 setMessage("Please select your department!");
         }
     }
+
+    useEffect(() => {
+        console.log(skills.join(", "));
+    }, [skills])
 
     return (
         <ScrollView>
@@ -112,17 +149,43 @@ const Register = () => {
                         )
                     }
                 </Picker>
-                <Text>Interests (separated by comma)</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setInterests}
-                    value={interests}
-                ></TextInput>
-                <Button
+                <Text>Skills</Text>
+                <View style={styles.addSkillsContainer}>
+                    <Autocomplete
+                                data={showSuggestions ? filteredSkills : []}
+                                value={selectedSkill}
+                                onChangeText={(text) => {
+                                  setSelectedSkill(text);
+                                  setShowSuggestions(true);
+                                }}
+                                flatListProps={{
+                                  keyExtractor: (_, idx) => idx.toString(),
+                                  renderItem: ({ item }) => (
+                                    <TouchableOpacity
+                                      style={styles.autocompleteItem}
+                                      onPress={() => {
+                                        setSelectedSkill(item);
+                                        setShowSuggestions(false);
+                                      }}
+                                    >
+                                      <Text style={styles.autocompleteText}>{item}</Text>
+                                    </TouchableOpacity>
+                                  ),
+                                }}
+                                inputContainerStyle={styles.inputContainer}
+                                listContainerStyle={styles.suggestionContainer}
+                                placeholder="Search for a skill..."
+                              />
+
+                    <View>
+                        <Button title="Add" onPress={handleAdd} disabled={!selectedSkill} />
+                    </View>
+                </View>
+                {filteredSkills.length === 0 && <Button
                     title="Register"
                     color="#f1243f"
                     onPress={handleSignUp}
-                />
+                />}
                 <Text style={styles.statusMessage}>{message}</Text>
 
             </SafeAreaView>
@@ -159,8 +222,47 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         padding: 10,
     },
+        overlay: {
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+        },
+        title: {
+            fontSize: 18,
+            fontWeight: "bold",
+            marginBottom: 15,
+            color: "#6200EE",
+        },
+        inputContainer: {
+            borderWidth: 0,
+            borderBottomWidth: 1,
+            borderColor: "#ccc",
+        },
+        suggestionContainer: {
+            maxHeight: 150,
+            borderWidth: 1,
+            borderColor: "#ddd",
+            borderRadius: 5,
+            marginTop: 5,
+        },
+        autocompleteItem: {
+            padding: 10,
+            borderBottomWidth: 1,
+            borderColor: "#eee",
+        },
+        autocompleteText: {
+            fontSize: 16,
+            color: "#333",
+        },
+        addSkillsContainer: {
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            marginTop: 10,
+        }
 });
-
-
 
 export default Register;
