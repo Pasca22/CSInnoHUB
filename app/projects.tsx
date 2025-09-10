@@ -1,18 +1,30 @@
-import React, {useEffect, useState} from "react";
-import {ActivityIndicator, ScrollView, StyleSheet, TextInput, View} from "react-native";
-import {auth, db} from "@/firebaseConfig";
-import {collection, doc, DocumentReference, getDocs} from "firebase/firestore";
-import { updateDoc, arrayRemove } from "firebase/firestore";
-import { TouchableOpacity } from "react-native";
-import {Project, ProjectJoinRequest} from "./types";
-import {Avatar, Button, Card, Icon, ListItem, Text} from "@rneui/themed";
-import {FAB} from "react-native-elements";
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { auth, db } from "@/firebaseConfig";
+import { collection, doc, DocumentReference, getDocs, updateDoc, arrayRemove } from "firebase/firestore";
+import { Project, ProjectJoinRequest } from "./types";
 import AddProjectModal from "@/components/AddProjectModal";
 import RequestJoinModal from "@/components/RequestJoinModal";
 import ViewRequestsModal from "@/components/ViewRequestsModal";
 import AddCompetencyModal from "@/components/AddCompetencyModal";
-import {GestureHandlerRootView} from "react-native-gesture-handler";
-import {onAuthStateChanged, User} from "firebase/auth";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { onAuthStateChanged, User } from "firebase/auth";
+
+// Import components from react-native-paper
+import {
+  ActivityIndicator,
+  Avatar,
+  Button,
+  Card,
+  Chip,
+  Divider,
+  FAB,
+  Icon,
+  List,
+  SegmentedButtons,
+  Text,
+  TextInput,
+} from "react-native-paper";
 
 const Projects = () => {
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -26,528 +38,229 @@ const Projects = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [viewRequestsVisible, setViewRequestsVisible] = useState(false);
   const [selectedProjectRequests, setSelectedProjectRequests] = useState<ProjectJoinRequest[]>([]);
-  const [, setCompetencyMap] = useState<Record<string, string>>({});
   const [addCompetencyVisible, setAddCompetencyVisible] = useState(false);
   const [currentProjectIdForCompetency, setCurrentProjectIdForCompetency] = useState<string | null>(null);
   const [currentProjectCompetencies, setCurrentProjectCompetencies] = useState<string[]>([]);
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-  }, []);
-
-  const handleAddProject = () => { setModalVisible(true); };
-
   const [filterTitle, setFilterTitle] = useState("");
   const [filterKeywords, setFilterKeywords] = useState("");
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
       const projectsCollection = collection(db, "projects");
       const projectsSnapshot = await getDocs(projectsCollection);
-
       const projectData: Project[] = projectsSnapshot.docs.map((doc) => ({
         ...(doc.data() as Project),
         projectRef: doc.ref,
       }));
-
       setAllProjects(projectData);
-      updateProjectsView(projectData, viewMode);
-    };
 
-    const fetchUsers = async () => {
       const usersCollection = collection(db, "users");
       const usersSnapshot = await getDocs(usersCollection);
-
       const userData: Record<string, string> = {};
       usersSnapshot.forEach((doc) => {
         userData[doc.id] = doc.data().name;
       });
-
       setUsers(userData);
+
       setLoading(false);
     };
-
-    const fetchCompetencies = async () => {
-      const snapshot = await getDocs(collection(db, "competencies"));
-      const map: Record<string, string> = {};
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        map[doc.id] = data.name;
-      });
-      setCompetencyMap(map);
-    };
-
-    fetchProjects();
-    fetchUsers();
-    fetchCompetencies();
+    fetchData();
   }, []);
 
+  useEffect(() => {
+    updateProjectsView(allProjects, viewMode);
+  }, [allProjects, viewMode, currentUser, filterTitle, filterKeywords]);
+
+
   const updateProjectsView = (projectsList: Project[], mode: 'all' | 'my') => {
+    let listToFilter = projectsList;
+
     if (mode === 'my' && currentUser) {
-      const myProjects = projectsList.filter(project =>
-        project.founder.id === currentUser.uid ||
-        project.members.some(member => member.ref.id === currentUser.uid)
+      listToFilter = projectsList.filter(project =>
+          project.founder.id === currentUser.uid ||
+          project.members.some(member => member.ref.id === currentUser.uid)
       );
-      setProjects(myProjects);
-    } else {
-      setProjects(projectsList);
     }
-  };
 
-  const handleViewModeChange = (mode: 'all' | 'my') => {
-    setViewMode(mode);
-    updateProjectsView(allProjects, mode);
-  };
-
-  const filterProjects = () => {
-    let filtered = viewMode === 'my'
-      ? allProjects.filter(project =>
-          project.founder.id === currentUser?.uid ||
-          project.members.some(member => member.ref.id === currentUser?.uid)
-        )
-      : allProjects;
-
-    if (filterTitle !== "") {
+    let filtered = listToFilter;
+    if (filterTitle) {
       filtered = filtered.filter((project) =>
-        project.name.toLowerCase().includes(filterTitle.toLowerCase())
+          project.name.toLowerCase().includes(filterTitle.toLowerCase())
       );
     }
-
-    if (filterKeywords !== "") {
+    if (filterKeywords) {
       filtered = filtered.filter((project) =>
-        project.keywords.toLowerCase().includes(filterKeywords.toLowerCase())
+          (project.keywords || "").toLowerCase().includes(filterKeywords.toLowerCase())
       );
     }
-
     setProjects(filtered);
-  };
-
-  const handleRequestJoin = (projectId: string) => {
-    const projectRef = doc(db, "projects", projectId);
-    setSelectedProjectRef(projectRef);
-    setJoinModalVisible(true);
-  };
-
-  const handleShowRequests = (requests: ProjectJoinRequest[], projectId:string) => {
-    const projectRef = doc(db, "projects", projectId);
-    setSelectedProjectRef(projectRef);
-    setSelectedProjectRequests(requests);
-    setViewRequestsVisible(true);
   };
 
   const handleDeleteCompetency = async (projectId: string, skill: string) => {
     const projectRef = doc(db, "projects", projectId);
-    await updateDoc(projectRef, {
-      competencies: arrayRemove(skill),
-    });
-    setProjects(prev =>
-      prev.map(p =>
-        p.projectRef?.id === projectId
-          ? { ...p, competencies: (p.competencies || []).filter(c => c !== skill) }
-          : p
-      )
+    await updateDoc(projectRef, { competencies: arrayRemove(skill) });
+    setAllProjects(prev =>
+        prev.map(p =>
+            p.projectRef?.id === projectId
+                ? { ...p, competencies: (p.competencies || []).filter(c => c !== skill) }
+                : p
+        )
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#6200EE" />
-        <Text style={styles.loadingText}>Loading Projects...</Text>
-      </View>
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>Loading Projects...</Text>
+        </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScrollView style={styles.container}>
-        <View style={styles.toggleContainer}>
-          <Button
-            title="All Projects"
-            onPress={() => handleViewModeChange('all')}
-            buttonStyle={[
-              styles.toggleButton,
-              viewMode === 'all' ? styles.activeToggle : styles.inactiveToggle
-            ]}
-            titleStyle={styles.toggleText}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ScrollView style={styles.container}>
+          <SegmentedButtons
+              value={viewMode}
+              // This is the corrected line:
+              onValueChange={(value) => setViewMode(value as 'all' | 'my')}
+              buttons={[
+                { value: 'all', label: 'All Projects' },
+                { value: 'my', label: 'My Projects' },
+              ]}
+              style={styles.toggleContainer}
           />
-          <Button
-            title="My Projects"
-            onPress={() => handleViewModeChange('my')}
-            buttonStyle={[
-              styles.toggleButton,
-              viewMode === 'my' ? styles.activeToggle : styles.inactiveToggle
-            ]}
-            titleStyle={styles.toggleText}
-          />
-        </View>
 
-        <View style={styles.filterContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder={"Enter title filter:"}
-            placeholderTextColor="#888"
-            onChangeText={setFilterTitle}
-            value={filterTitle}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={"Enter keywords filter:"}
-            placeholderTextColor="#888"
-            onChangeText={setFilterKeywords}
-            value={filterKeywords}
-          />
-          <Button onPress={filterProjects}>Filter</Button>
-        </View>
+          <View style={styles.filterContainer}>
+            <TextInput label="Filter by title" value={filterTitle} onChangeText={setFilterTitle} mode="outlined" dense />
+            <TextInput label="Filter by keywords" value={filterKeywords} onChangeText={setFilterKeywords} mode="outlined" dense style={{marginTop: 10}} />
+          </View>
 
-        {projects.map((project, index) => {
-          const displayedMembers = project.members.slice(0, 3);
-          const hasMoreMembers = project.members.length > 3;
-          const startingDate = project.startingDate
-            ? project.startingDate.toDate().toLocaleDateString()
-            : "No start date";
-          const isMyTab = viewMode === 'my';
-          const hasPendingRequest = project.requests?.some(
-            (req) => req.ref.id === currentUser?.uid
-          );
+          {projects.map((project) => {
+            const isMyProject = viewMode === 'my' && currentUser && (project.founder.id === currentUser.uid || project.members.some(m => m.ref.id === currentUser.uid));
+            const isFounder = currentUser?.uid === project.founder.id;
 
-          return (
-            <Card key={index} containerStyle={styles.cardContainer}>
-              <Card.Title style={styles.cardTitle}>{project.name}</Card.Title>
-              <View style={styles.detailsContainer}>
-                <Text style={styles.startingDateText}>
-                  Starting Date: {startingDate}
-                </Text>
-                {project.description && (
-                  <Text style={styles.descriptionText}>
-                    {project.description}
-                  </Text>
-                )}
-              </View>
+            return (
+                <Card key={project.projectRef?.id} style={styles.cardContainer} mode="elevated">
+                  <Card.Title title={project.name} titleStyle={styles.cardTitle} />
+                  <Card.Content>
+                    <Text style={styles.startingDateText}>
+                      Start Date: {project.startingDate ? project.startingDate.toDate().toLocaleDateString() : "N/A"}
+                    </Text>
+                    <Text style={styles.descriptionText}>{project.description}</Text>
 
-              <Card.Divider />
+                    <Divider style={styles.divider} />
 
-              <View style={styles.founderContainer}>
-                <View style={styles.founderIcon}>
-                  <Icon
-                    name="crown"
-                    type="material-community"
-                    color="#FFD700"
-                    size={30}
-                  />
-                </View>
-                <Text style={styles.founderText}>
-                  Founder: {users[project.founder.id] || "Unknown"}
-                </Text>
-              </View>
+                    <View style={styles.founderContainer}>
+                      <Icon source="crown" color="#FFD700" size={30} />
+                      <Text style={styles.founderText}>Founder: {users[project.founder.id] || "Unknown"}</Text>
+                    </View>
 
-              <Card.Divider />
+                    <Divider style={styles.divider} />
 
-              <Text style={styles.sectionTitle}>Required Competencies</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {(project.competencies ?? []).length > 0 ? (
-                  (project.competencies ?? []).map((skill, idx) => (
-                    <View
-                      key={idx}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        backgroundColor: "#E0E0E0",
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        borderRadius: 10,
-                        margin: 4,
-                      }}
-                    >
-                      <Text style={{ fontSize: 14, color: "#333", fontWeight: "500" }}>
-                        {skill}
-                      </Text>
-                      {currentUser?.uid === project.founder.id && isMyTab && (
-                        <TouchableOpacity
-                          onPress={() =>
-                            handleDeleteCompetency(project.projectRef?.id || "", skill)
-                          }
-                        >
-                          <Text
-                            style={{
-                              marginLeft: 8,
-                              color: "red",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            ×
-                          </Text>
-                        </TouchableOpacity>
+                    <Text style={styles.sectionTitle}>Required Competencies</Text>
+                    <View style={styles.chipContainer}>
+                      {(project.competencies ?? []).length > 0 ? (
+                          project.competencies?.map((skill, idx) => (
+                              <Chip
+                                  key={idx}
+                                  onClose={isFounder && isMyProject ? () => handleDeleteCompetency(project.projectRef!.id, skill) : undefined}
+                              >
+                                {skill}
+                              </Chip>
+                          ))
+                      ) : (
+                          <Text style={styles.italicText}>No competencies listed</Text>
                       )}
                     </View>
-                  ))
-                ) : (
-                  <Text style={{ fontStyle: "italic", color: "#888" }}>
-                    No competencies listed
-                  </Text>
-                )}
-              </View>
+                    {isFounder && isMyProject && (
+                        <Button
+                            mode="outlined"
+                            onPress={() => {
+                              setCurrentProjectIdForCompetency(project.projectRef!.id);
+                              setCurrentProjectCompetencies(project.competencies ?? []);
+                              setAddCompetencyVisible(true);
+                            }}
+                            style={{ marginTop: 10 }}
+                        >+ Add Competency</Button>
+                    )}
 
-              {currentUser?.uid === project.founder.id && isMyTab && (
-                <Button
-                  title="+ Add Competency"
-                  type="outline"
-                  buttonStyle={{ marginTop: 10, borderColor: "#6200EE" }}
-                  titleStyle={{ color: "#6200EE" }}
-                  onPress={() => {
-                    setCurrentProjectIdForCompetency(project.projectRef?.id || null);
-                    setCurrentProjectCompetencies(project.competencies ?? []);
-                    setAddCompetencyVisible(true);
-                  }}
-                />
-              )}
-              <Card.Divider />
+                    <List.Section>
+                      <List.Subheader style={styles.sectionTitle}>Members ({project.members.length})</List.Subheader>
+                      {project.members.length > 0 ? (
+                          project.members.map((member, idx) => (
+                              <List.Item
+                                  key={idx}
+                                  title={users[member.ref.id] || "Unknown"}
+                                  description={member.role}
+                                  left={() => <Avatar.Text size={40} label={users[member.ref.id]?.charAt(0) || "?"} />}
+                              />
+                          ))
+                      ) : (
+                          <Text style={styles.italicText}>No members yet</Text>
+                      )}
+                    </List.Section>
+                  </Card.Content>
+                  <Card.Actions>
+                    {isMyProject ? (
+                        <Button
+                            mode="contained"
+                            onPress={() => {
+                              setSelectedProjectRef(doc(db, "projects", project.projectRef!.id));
+                              setSelectedProjectRequests(project.requests || []);
+                              setViewRequestsVisible(true);
+                            }}
+                        >Show Requests ({project.requests?.length || 0})</Button>
+                    ) : (
+                        <Button
+                            mode="contained"
+                            onPress={() => {
+                              setSelectedProjectRef(doc(db, "projects", project.projectRef!.id));
+                              setJoinModalVisible(true);
+                            }}
+                        >Request to Join</Button>
+                    )}
+                  </Card.Actions>
+                </Card>
+            );
+          })}
+        </ScrollView>
 
-              <Text style={styles.sectionTitle}>
-                Members ({project.members.length})
-              </Text>
+        <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
 
-              {displayedMembers.length > 0 ? (
-                displayedMembers.map((member, idx) => (
-                  <ListItem key={idx} bottomDivider>
-                    <Avatar
-                      rounded
-                      title={users[member.ref.id]?.charAt(0) || "?"}
-                      containerStyle={styles.avatar}
-                    />
-                    <ListItem.Content>
-                      <ListItem.Title style={styles.memberName}>
-                        {users[member.ref.id] || "Unknown"}
-                      </ListItem.Title>
-                      <ListItem.Subtitle>{member.role}</ListItem.Subtitle>
-                    </ListItem.Content>
-                  </ListItem>
-                ))
-              ) : (
-                <Text style={styles.noMembersText}>No members in this project</Text>
-              )}
-
-              {hasMoreMembers && (
-                <Text style={styles.moreMembersText}>
-                  {project.members.length - 3} more members...
-                </Text>
-              )}
-
-              {isMyTab ? (
-                <>
-                  {hasPendingRequest ? (
-                    <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
-                      Pending Requests
-                    </Text>
-                  ) : (
-                    <Text style={{ color: "orange", fontWeight: "bold", marginTop: 10 }}>
-                      No Pending Requests
-                    </Text>
-                  )}
-                  <Button
-                    title="Show Requests"
-                    buttonStyle={styles.requestButton}
-                    titleStyle={styles.requestButtonText}
-                    onPress={() => handleShowRequests(project.requests || [], project.projectRef!.id)}
-                  />
-                </>
-              ) : (
-                <Button
-                  title="Request to Join"
-                  buttonStyle={styles.requestButton}
-                  titleStyle={styles.requestButtonText}
-                  onPress={() => handleRequestJoin(project.projectRef!.id)}
-                />
-              )}
-            </Card>
-          );
-        })}
-      </ScrollView>
-
-      {currentProjectIdForCompetency && (
-        <AddCompetencyModal
-            visible={addCompetencyVisible}
-            onClose={() => setAddCompetencyVisible(false)}
-            projectId={currentProjectIdForCompetency}
-            existingCompetencies={currentProjectCompetencies}
-            onCompetencyAdded={(newSkill) => {
-            setProjects((prevProjects) =>
-                  prevProjects.map((p) => p.projectRef?.id === currentProjectIdForCompetency
-                      ? { ...p, competencies: [...(p.competencies || []), newSkill] }
-                      : p
-                  )
-                );
-              }}
-        />
-      )}
-
-      <FAB
-        icon={{ name: "add", color: "white" }}
-        placement="right"
-        color="#6200EE"
-        onPress={handleAddProject}
-      />
-
-      <AddProjectModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        projects={projects}
-        setProjects={setProjects}
-      />
-
-      <RequestJoinModal
-        visible={joinModalVisible}
-        onClose={() => setJoinModalVisible(false)}
-        projectId={selectedProjectRef}
-      />
-      <ViewRequestsModal
-        visible={viewRequestsVisible}
-        onClose={() => setViewRequestsVisible(false)}
-        requests={selectedProjectRequests}
-        users={users}
-        projectRef={selectedProjectRef}
-      />
-    </GestureHandlerRootView>
+        <AddProjectModal modalVisible={modalVisible} setModalVisible={setModalVisible} projects={allProjects} setProjects={setAllProjects} />
+        <RequestJoinModal visible={joinModalVisible} onClose={() => setJoinModalVisible(false)} projectId={selectedProjectRef} />
+        <ViewRequestsModal visible={viewRequestsVisible} onClose={() => setViewRequestsVisible(false)} requests={selectedProjectRequests} users={users} projectRef={selectedProjectRef} />
+        {currentProjectIdForCompetency && <AddCompetencyModal visible={addCompetencyVisible} onClose={() => setAddCompetencyVisible(false)} projectId={currentProjectIdForCompetency} existingCompetencies={currentProjectCompetencies} onCompetencyAdded={(newSkill) => setAllProjects(prev => prev.map(p => p.projectRef?.id === currentProjectIdForCompetency ? { ...p, competencies: [...(p.competencies || []), newSkill] } : p))} />}
+      </GestureHandlerRootView>
   );
 };
 
 const styles = StyleSheet.create({
-  toggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 10,
-    gap: 10,
-  },
-  toggleButton: {
-    borderRadius: 20,
-    paddingHorizontal: 20,
-  },
-  activeToggle: {
-    backgroundColor: '#6200EE',
-  },
-  inactiveToggle: {
-    backgroundColor: '#cccccc',
-  },
-  toggleText: {
-    color: 'white',
-    fontWeight: '500',
-  },
-  filterContainer: {
-    flex: 1,
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 15,
-  },
-  input: {
-    flex: 1,
-    height: 40,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    width: "100%",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 10,
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    fontSize: 16,
-    color: "#6200EE",
-    fontWeight: "500",
-  },
-  cardContainer: {
-    borderRadius: 12,
-    padding: 15,
-    elevation: 3,
-    marginBottom: 15,
-  },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    color: "#6a11cb",
-    marginBottom: 15,
-  },
-  detailsContainer: {
-    marginBottom: 15,
-  },
-  startingDateText: {
-    fontSize: 16,
-    color: "#6a11cb",
-    fontWeight: "500",
-    marginBottom: 10,
-  },
-  descriptionText: {
-    fontSize: 16,
-    color: "#555",
-    fontWeight: "500",
-    fontStyle: "italic",
-  },
-  founderContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  founderIcon: {
-    backgroundColor: "#6a11cb",
-    borderRadius: 20,
-    padding: 10,
-    marginRight: 10,
-  },
-  founderText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#6a11cb",
-  },
-  avatar: {
-    backgroundColor: "#6a11cb",
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#6a11cb",
-    marginBottom: 5,
-  },
-  memberName: {
-    color: "#333",
-    fontWeight: "500",
-  },
-  noMembersText: {
-    textAlign: "center",
-    fontSize: 14,
-    color: "#999",
-  },
-  moreMembersText: {
-    textAlign: "center",
-    fontSize: 14,
-    color: "#6a11cb",
-    fontStyle: "italic",
-    marginTop: 5,
-  },
-  requestButton: {
-    backgroundColor: "#6200EE",
-    borderRadius: 8,
-    marginTop: 15,
-    paddingVertical: 12,
-  },
-  requestButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "500",
-  },
+  container: { flex: 1, backgroundColor: "#f5f5f5", padding: 10 },
+  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { fontSize: 16, fontWeight: "500" },
+  toggleContainer: { marginVertical: 10, paddingHorizontal: 20 },
+  filterContainer: { padding: 15, backgroundColor: 'white', borderRadius: 8, margin: 5, elevation: 2 },
+  cardContainer: { borderRadius: 12, marginBottom: 15 },
+  cardTitle: { fontSize: 24, fontWeight: "bold", color: "#6a11cb" },
+  startingDateText: { fontSize: 14, color: "#6a11cb", fontWeight: "500", marginBottom: 10 },
+  descriptionText: { fontSize: 16, color: "#555", fontStyle: "italic" },
+  divider: { marginVertical: 15 },
+  founderContainer: { flexDirection: "row", alignItems: "center" },
+  founderText: { fontSize: 16, fontWeight: "500", color: "#6a11cb", marginLeft: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#6a11cb" },
+  chipContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  italicText: { fontStyle: "italic", color: "#888", marginVertical: 10 },
+  fab: { position: 'absolute', margin: 16, right: 0, bottom: 0 },
 });
 
 export default Projects;

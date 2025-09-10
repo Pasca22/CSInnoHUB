@@ -1,26 +1,41 @@
-import {SafeAreaView} from "react-native-safe-area-context";
-import {ActivityIndicator, Button, Modal, StyleSheet, Text, TextInput, View} from "react-native";
-import React, {useContext, useEffect, useState} from "react";
-import { AuthContext } from "@/app/AuthContext"; // <-- TO THIS
-import {EmailAuthProvider, reauthenticateWithCredential, signOut, updateEmail} from "@firebase/auth";
-import {auth, db} from "@/firebaseConfig";
-import {doc, getDoc} from "firebase/firestore";
-import {Picker} from "@react-native-picker/picker";
-import {setDoc} from "@firebase/firestore";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView, StyleSheet, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { EmailAuthProvider, reauthenticateWithCredential, signOut, updateEmail } from "@firebase/auth";
+import { auth, db } from "@/firebaseConfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+// Import components from react-native-paper
+import {
+    ActivityIndicator,
+    Button,
+    Card,
+    Menu,
+    Modal,
+    Portal,
+    Text,
+    TextInput,
+    Title,
+    useTheme
+} from 'react-native-paper';
+
+// Helper object to display department labels
+const departmentOptions = [
+    { label: "Computer Science", value: "computer_science" },
+    { label: "Mathematics & Computer Science", value: "mathematics_computer_science" },
+    { label: "Artificial Intelligence", value: "artificial_intelligence" },
+    { label: "Information Engineering", value: "information_engineering" }
+];
 
 const Profile = () => {
-    // const isAuthenticated = useContext(AuthContext);
-    // if(!isAuthenticated)
-    //     return <Login/>
-
     const [admissionYear, setAdmissionYear] = useState("");
     const [department, setDepartment] = useState("");
     const [email, setEmail] = useState("");
-    const [skills, setSkills] = useState("");
+    const [skills, setSkills] = useState(""); // Changed from interests to skills
     const [name, setName] = useState("");
     const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
 
-    const currentYear = new Date().getFullYear()
+    const currentYear = new Date().getFullYear();
     const [message, setMessage] = useState("");
     const [updateStatus, setUpdateStatus] = useState(false);
     const [changeEmailVisible, setChangeEmailVisible] = useState(false);
@@ -29,33 +44,26 @@ const Profile = () => {
     const [changeEmailMessage, setChangeEmailMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
-    // auth.onAuthStateChanged(() => {
-    //     fetchUserDetails();
-    //     if(auth.currentUser != null)
-    //         setLoading(false);
-    // })
-    useEffect(() => {
-        const unsubscribe = auth.onAuthStateChanged(() => {
-            fetchUserDetails();
-            if (auth.currentUser != null)
-                setLoading(false);
-        });
+    // State for Menu visibility
+    const [departmentMenuVisible, setDepartmentMenuVisible] = useState(false);
+    const [admissionYearMenuVisible, setAdmissionYearMenuVisible] = useState(false);
 
-        // Cleanup on unmount
+    const theme = useTheme();
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                fetchUserDetails(user.uid);
+            } else {
+                setLoading(false);
+            }
+        });
         return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        fetchUserDetails();
-        setLoading(false);
-    }, []);
-
-    const fetchUserDetails = async () => {
+    const fetchUserDetails = async (userId: string) => {
         try {
-            if (!auth.currentUser)
-                return;
-
-            const userRef = doc(db, "users", auth.currentUser.uid);
+            const userRef = doc(db, "users", userId);
             const userSnap = await getDoc(userRef);
 
             if (userSnap.exists()) {
@@ -63,201 +71,202 @@ const Profile = () => {
                 setAdmissionYear(data["admission_year"] || "");
                 setDepartment(data["department"] || "");
                 setEmail(data["email"] || "");
-                setSkills(data["skills"] || data["interests"] || "");
+                setSkills(data["skills"] || ""); // Changed from interests to skills
                 setName(data["name"] || "");
                 setProfilePhotoUrl(data["profile_photo_url"] || "");
-            } else {
-                console.log("No such document!");
             }
         } catch (error) {
             console.error("Error fetching user details:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const updateUserDetails = async () => {
         setMessage("");
+        if (!auth.currentUser) return;
 
-        try{
-            if(!validateName(name))
-                throw new Error("auth/invalid-name")
+        try {
+            if (!/^[A-Za-z\s]+$/.test(name.trim())) {
+                throw new Error("auth/invalid-name");
+            }
 
-            setDoc(doc(db, "users", "" + auth.currentUser?.uid.toString()), {
-                auth_ref: auth.currentUser?.uid,
-                name: name.toString(),
-                email: auth.currentUser?.email || "error",
+            await setDoc(doc(db, "users", auth.currentUser.uid), {
+                auth_ref: auth.currentUser.uid,
+                name: name,
+                email: auth.currentUser.email,
                 department: department,
                 admission_year: admissionYear,
-                profile_photo_url: null,
-                skills: skills,
+                profile_photo_url: profilePhotoUrl || null,
+                skills: skills, // Changed from interests to skills
             });
 
             setUpdateStatus(true);
             setMessage("Details updated successfully!");
-        }catch (error){
-            // @ts-ignore
+        } catch (error: any) {
             const errorCode = error.message;
-
             setUpdateStatus(false);
-            if (errorCode === "auth/invalid-name")
+            if (errorCode === "auth/invalid-name") {
                 setMessage("Please enter a valid name!");
+            }
         }
-    }
+    };
 
     const updateUserEmail = async () => {
-        if(auth.currentUser == null || auth.currentUser.email == null)
-            return;
+        if (!auth.currentUser || !auth.currentUser.email) return;
 
-        try{
-            const credential = EmailAuthProvider.credential(auth.currentUser?.email, changeEmailPassword);
+        try {
+            const credential = EmailAuthProvider.credential(auth.currentUser.email, changeEmailPassword);
             await reauthenticateWithCredential(auth.currentUser, credential);
-
             await updateEmail(auth.currentUser, changeEmailEmail);
 
             setChangeEmailVisible(false);
             setChangeEmailEmail("");
             setChangeEmailPassword("");
             setChangeEmailMessage("");
-            setEmail(auth.currentUser.email);
-            updateUserDetails();
-        }catch (error : any){
+            setEmail(auth.currentUser.email ?? "");
+            await updateUserDetails();
+        } catch (error: any) {
             const errorCode = error.code;
-            console.log(errorCode);
-
-            if(errorCode === "auth/invalid-credential")
+            if (errorCode === "auth/invalid-credential") {
                 setChangeEmailMessage("Password is incorrect!");
-            else if(errorCode == "auth/invalid-email")
+            } else if (errorCode === "auth/invalid-email") {
                 setChangeEmailMessage("Please enter a valid email!");
-            else if(errorCode == "auth/email-already-in-use")
-                setChangeEmailMessage("An account with this email already exists!")
+            } else if (errorCode === "auth/email-already-in-use") {
+                setChangeEmailMessage("An account with this email already exists!");
+            }
         }
-    }
+    };
 
-    function validateName(name: string): boolean {
-        name = name.trim()
-        return /^[A-Za-z\s]+$/.test(name);
-    }
-
-    if(loading)
+    if (loading) {
         return (
-            <View style={styles.container}>
-                <ActivityIndicator size="large" color="#6200EE" />
-                <Text>Loading profile...</Text>
+            <View style={styles.loaderContainer}>
+                <ActivityIndicator size="large" />
+                <Text style={styles.loadingText}>Loading profile...</Text>
             </View>
         );
+    }
+
+    const getDepartmentLabel = (value: string) => {
+        return departmentOptions.find(option => option.value === value)?.label || "Select Department";
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            <Text style={styles.title}>My Profile</Text>
-            <View style={styles.detailsContainer}>
-                <Text>Name:</Text>
-                <TextInput
-                    style={styles.input}
-                    value={name}
-                    onChangeText={(name) => {setName(name)}}>
-                </TextInput>
-                <Text>Email:</Text>
-                <TextInput
-                    style={[styles.input, styles.disableField,{ pointerEvents: "none" }]}
-                    value={email}
-                    onChangeText={(email) => {setEmail(email)}}>
-                </TextInput>
-                <Text>Skills (separated by comma):</Text>
-                <TextInput
-                    style={styles.input}
-                    value={skills}
-                    onChangeText={(skills) => {setSkills(skills)}}>
-                </TextInput>
-                <Text>Department</Text>
-                <Picker
-                    style={{ height: 30, width: 250, marginBottom: 10, marginTop: 5, borderColor: "#ccc" }}
-                    selectedValue={department}
-                    onValueChange={(itemValue) => { // @ts-ignore
-                        setDepartment(itemValue)}}>
-                    <Picker.Item label="Computer science" value="computer_science" />
-                    <Picker.Item label="Mathematics and computer science" value="mathematics_computer_science" />
-                    <Picker.Item label="Artificial intelligence" value="artificial_intelligence" />
-                    <Picker.Item label="Information Engineering" value="information_engineering" />
-                </Picker>
-                <Text>Admission year</Text>
-                <Picker
-                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 5, borderColor: "#ccc" }}
-                    selectedValue={admissionYear}
-                    onValueChange={(itemValue) => { // @ts-ignore
-                        setAdmissionYear(itemValue)}}>
-                    {
-                        [...Array(currentYear - 1970 + 1)].map((_,i) =>
-                            <Picker.Item key={currentYear - i} label={(currentYear - i).toString()} value={(currentYear - i).toString()}/>
-                        )
-                    }
-                </Picker>
-                <View style={styles.saveButton}>
-                    <Button
-                        title={"Change email"}
-                        onPress={() => {setChangeEmailVisible(true)}}
-                    ></Button>
-                </View>
-                <View style={styles.saveButton}>
-                    <Button
-                        title={"Save"}
-                        onPress={updateUserDetails}
-                    ></Button>
-                </View>
-                <Text style={updateStatus ? styles.successMessage : styles.errorMessage}>
-                    {message !== "" ? message : null}
-                </Text>
-            </View>
-            <View>
-                <Button
-                    color={"#EE0000FF"}
-                    title={"Log out"}
-                    onPress={() => {
-                        signOut(auth);
-                    }}
-                ></Button>
-            </View>
-            <Modal visible={changeEmailVisible} animationType="slide" transparent>
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.title}>Change email</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter your new email address here"
-                            value={changeEmailEmail}
-                            onChangeText={(email) => {
-                                setChangeEmailEmail(email);
-                            }}
-                        />
-                        <TextInput
-                            style={styles.inputNoMarginTop}
-                            placeholder="Enter your password here"
-                            secureTextEntry={true}
-                            value={changeEmailPassword}
-                            onChangeText={(password) => {
-                                setChangeEmailPassword(password);
-                            }}
-                        />
-                        <Button title="Change email" onPress={() => {
-                            if(changeEmailEmail === "") {
-                                setChangeEmailMessage("Email field cannot be empty!");
-                                return;
-                            }
-                            if(changeEmailPassword === "") {
-                                setChangeEmailMessage("Password field cannot be empty!");
-                                return;
-                            }
+            <Portal>
+                <Modal visible={changeEmailVisible} onDismiss={() => setChangeEmailVisible(false)}>
+                    <Card style={styles.modalCard}>
+                        <Card.Title title="Change Email" />
+                        <Card.Content>
+                            <TextInput
+                                label="New Email"
+                                value={changeEmailEmail}
+                                onChangeText={setChangeEmailEmail}
+                                style={styles.inputSpacing}
+                                mode="outlined"
+                            />
+                            <TextInput
+                                label="Password"
+                                secureTextEntry={true}
+                                value={changeEmailPassword}
+                                onChangeText={setChangeEmailPassword}
+                                style={styles.inputSpacing}
+                                mode="outlined"
+                            />
+                            {changeEmailMessage ? <Text style={styles.errorMessage}>{changeEmailMessage}</Text> : null}
+                        </Card.Content>
+                        <Card.Actions>
+                            <Button onPress={() => setChangeEmailVisible(false)}>Cancel</Button>
+                            <Button onPress={updateUserEmail}>Update</Button>
+                        </Card.Actions>
+                    </Card>
+                </Modal>
+            </Portal>
 
-                            updateUserEmail();
-                        }} />
-                        <Button title="Cancel" onPress={() => {
-                            setChangeEmailEmail("");
-                            setChangeEmailPassword("");
-                            setChangeEmailMessage("");
-                            setChangeEmailVisible(false)
-                        }} color="red" />
-                        <Text style={{textAlign: "center", marginTop: 5, marginBottom: -5}}>{changeEmailMessage}</Text>
-                    </View>
-                </View>
-            </Modal>
+            <Title style={styles.title}>My Profile</Title>
+            <Card style={styles.card}>
+                <Card.Content>
+                    <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" style={styles.inputSpacing} />
+                    <TextInput label="Email" value={email} disabled={true} mode="outlined" style={styles.inputSpacing} />
+                    <TextInput label="Skills (comma separated)" value={skills} onChangeText={setSkills} mode="outlined" style={styles.inputSpacing} />
+
+                    <Menu
+                        visible={departmentMenuVisible}
+                        onDismiss={() => setDepartmentMenuVisible(false)}
+                        anchor={
+                            <Button
+                                onPress={() => setDepartmentMenuVisible(true)}
+                                mode="outlined"
+                                icon="chevron-down"
+                                contentStyle={styles.menuAnchorButton}
+                                style={styles.inputSpacing}
+                            >
+                                {getDepartmentLabel(department)}
+                            </Button>
+                        }>
+                        {departmentOptions.map(option => (
+                            <Menu.Item
+                                key={option.value}
+                                onPress={() => {
+                                    setDepartment(option.value);
+                                    setDepartmentMenuVisible(false);
+                                }}
+                                title={option.label}
+                            />
+                        ))}
+                    </Menu>
+
+                    <Menu
+                        visible={admissionYearMenuVisible}
+                        onDismiss={() => setAdmissionYearMenuVisible(false)}
+                        anchor={
+                            <Button
+                                onPress={() => setAdmissionYearMenuVisible(true)}
+                                mode="outlined"
+                                icon="chevron-down"
+                                contentStyle={styles.menuAnchorButton}
+                                style={styles.inputSpacing}
+                            >
+                                {admissionYear || "Select Admission Year"}
+                            </Button>
+                        }>
+                        <ScrollView style={{ maxHeight: 200 }}>
+                            {[...Array(currentYear - 1970 + 1)].map((_, i) => {
+                                const year = (currentYear - i).toString();
+                                return (
+                                    <Menu.Item
+                                        key={year}
+                                        onPress={() => {
+                                            setAdmissionYear(year);
+                                            setAdmissionYearMenuVisible(false);
+                                        }}
+                                        title={year}
+                                    />
+                                );
+                            })}
+                        </ScrollView>
+                    </Menu>
+
+                    <Button mode="contained-tonal" onPress={() => setChangeEmailVisible(true)} style={styles.button}>
+                        Change Email
+                    </Button>
+                    <Button mode="contained" onPress={updateUserDetails} style={styles.button}>
+                        Save Details
+                    </Button>
+                    <Text style={updateStatus ? styles.successMessage : styles.errorMessage}>
+                        {message}
+                    </Text>
+                </Card.Content>
+            </Card>
+
+            <Button
+                mode="contained"
+                onPress={() => signOut(auth)}
+                style={styles.logoutButton}
+                buttonColor={theme.colors.error}
+            >
+                Log Out
+            </Button>
         </SafeAreaView>
     );
 };
@@ -265,82 +274,53 @@ const Profile = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
         alignItems: "center",
+        padding: 16,
+        backgroundColor: '#f5f5f5'
     },
-    horizontal: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    saveButton: {
-        marginBottom: 10,
+    loadingText: {
+        marginTop: 10,
     },
-    detailsContainer: {
+    card: {
+        width: '100%',
+        maxWidth: 400,
+    },
+    modalCard: {
         margin: 20,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 10,
-        padding: 20,
-        width: 300,
     },
-    input: {
-        height: 30,
-        marginTop: 2,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        backgroundColor: "white"
+    title: {
+        fontSize: 24,
+        marginBottom: 20,
     },
-    inputNoMarginTop: {
-        height: 30,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        backgroundColor: "white"
+    inputSpacing: {
+        marginBottom: 16,
     },
-    inputNoMarginBottom: {
-        height: 30,
-        marginTop: 2,
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        backgroundColor: "white"
+    menuAnchorButton: {
+        height: 40,
+        justifyContent: 'center',
     },
-    disableField: {
-        backgroundColor: "lightgray"
+    button: {
+        marginTop: 8,
+    },
+    logoutButton: {
+        marginTop: 20,
+        width: '100%',
+        maxWidth: 400,
     },
     errorMessage: {
         textAlign: "center",
-        color: "#f60000",
+        color: "#B00020",
+        marginTop: 10,
     },
     successMessage: {
         textAlign: "center",
         color: "green",
-    },
-    modalContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    },
-    modalContent: {
-        width: 300,
-        padding: 20,
-        backgroundColor: 'white',
-        borderRadius: 10,
-        elevation: 5,
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        textAlign: 'center',
+        marginTop: 10,
     },
 });
 

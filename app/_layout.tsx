@@ -1,34 +1,44 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-// import Index from './index';
-import Login from './login'; // <-- ADD this import
-
+import Login from './login';
 import Profile from './profile';
 import Events from './events';
 import Register from "./register";
 import Mentors from "./mentors";
 import Projects from "./projects";
-import React, { useState } from "react";
+import React from "react";
 import { onAuthStateChanged } from "@firebase/auth";
 import { auth } from "@/firebaseConfig";
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
+// Import PaperProvider
+import { PaperProvider } from 'react-native-paper';
+
 const Tab = createBottomTabNavigator();
 
 export default function RootLayout() {
-    const [isAuthenticated, setIsAuthenticated] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
-    onAuthStateChanged(auth, (user) => {
-        setTimeout(() => { setIsAuthenticated(auth.currentUser != null) }, 0);
-    });
+    // Best practice: use useEffect for subscriptions
+    React.useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setIsAuthenticated(!!user); // Sets to true if user exists, false otherwise
+        });
 
-    if (!isAuthenticated)
-        return <NotAuthenticatedTabBar />;
-    return <AuthenticatedTabBar />;
+        // Cleanup subscription on unmount
+        return () => unsubscribe();
+    }, []);
+
+    return (
+        // Wrap the entire app with PaperProvider
+        <PaperProvider>
+            {!isAuthenticated ? <NotAuthenticatedTabBar /> : <AuthenticatedTabBar />}
+        </PaperProvider>
+    );
 }
 
 const NotAuthenticatedTabBar = () => {
     return (
-        <Tab.Navigator initialRouteName="index">
+        <Tab.Navigator initialRouteName="login">
             <Tab.Screen
                 name="login"
                 component={Login}
@@ -57,7 +67,7 @@ const NotAuthenticatedTabBar = () => {
 
 const AuthenticatedTabBar = () => {
     return (
-        <Tab.Navigator initialRouteName="index">
+        <Tab.Navigator initialRouteName="profile">
             <Tab.Screen
                 name="profile"
                 component={Profile}
@@ -80,7 +90,7 @@ const AuthenticatedTabBar = () => {
                     ),
                 }}
             />
-             <Tab.Screen
+            <Tab.Screen
                 name="projects"
                 component={Projects}
                 options={{
