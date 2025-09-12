@@ -1,118 +1,76 @@
-import AntDesign from '@expo/vector-icons/AntDesign';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { TextInput, Chip } from 'react-native-paper';
 
 interface TagInputProps {
-    tags: any[];
-    setTags: React.Dispatch<React.SetStateAction<any[]>>;
-  }
+    tags: string[];
+    setTags: React.Dispatch<React.SetStateAction<string[]>>;
+}
 
-function TagInput ({ tags, setTags }: TagInputProps) {
+function TagInput({ tags, setTags }: TagInputProps) {
     const [text, setText] = useState('');
 
-    const addTag = () => {
-        if (text.trim() !== '') {
-            setTags([...tags, text.trim()]);
+    const handleAddTag = () => {
+        const trimmedText = text.trim();
+        // Add tag only if it's not empty and not already in the list
+        if (trimmedText && !tags.includes(trimmedText)) {
+            setTags([...tags, trimmedText]);
             setText('');
         }
     };
 
-    const removeTag = (index: any) => {
-        const newTags = [...tags];
-        newTags.splice(index, 1);
-        setTags(newTags);
+    const handleRemoveTag = (tagToRemove: string) => {
+        setTags(tags.filter(tag => tag !== tagToRemove));
     };
 
     return (
-        <>
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Add a tag"
-                    value={text}
-                    onChangeText={setText}
-                    onSubmitEditing={addTag}
-                />
-                <TouchableOpacity onPress={addTag} 
-                    style={styles.addButton}
-                >
-                    <Text style={styles.buttonText}>Add</Text>
-                </TouchableOpacity>
-            </View>
+        <View style={styles.container}>
+            <TextInput
+                label="Keywords / Tags"
+                placeholder="Type a tag and press enter"
+                value={text}
+                onChangeText={setText}
+                onSubmitEditing={handleAddTag} // This allows adding the tag by pressing the 'enter' or 'return' key
+                mode="outlined"
+                style={styles.input}
+                right={
+                    <TextInput.Icon
+                        icon="plus-circle"
+                        onPress={handleAddTag}
+                        disabled={!text.trim()}
+                    />
+                }
+            />
             <View style={styles.tagContainer}>
-                {tags.map((tag: any, index: any) => (
-                    <View key={index} style={styles.tagWrapper}>
-                        <TouchableOpacity onPress={() => removeTag(index)} style={styles.tag}>
-                            <Text style={styles.tagText}>{tag}</Text>
-                            <AntDesign name="close" size={16} color="black" />
-                        </TouchableOpacity>
-                    </View>
+                {tags.map((tag, index) => (
+                    // This key is more robust and guarantees uniqueness among siblings.
+                    <Chip
+                        key={`${tag}-${index}`}
+                        onClose={() => handleRemoveTag(tag)}
+                        style={styles.chip}
+                    >
+                        {tag}
+                    </Chip>
                 ))}
             </View>
-        </>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    container: {
+        marginBottom: 16,
+    },
+    input: {
+        marginBottom: 8,
+    },
     tagContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 5,
-        padding: 5,
+        gap: 8, // Adds space between chips
     },
-    tagWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 5,
-        marginRight: 5,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingRight: 1,
-    },
-    input: {
-        flex: 1,
-        height: 40,
-        borderColor: '#CCCCCC',
-        borderWidth: 1,
-        paddingHorizontal: 10,
-        borderRadius: 5,
-        marginRight: 10,
-        backgroundColor: '#FFFFFF',
-    },
-    addButton: {
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#6200EE',
-    },
-    buttonText: {
-        color: '#6200EE',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    tag: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 14,
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        shadowOffset: {
-          width: 0,
-          height: 1,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.41,
-        elevation: 2,
-    },
-    tagText: {
-        marginRight: 5,
+    chip: {
+        // You can add specific styling for your chips here if needed
     },
 });
 

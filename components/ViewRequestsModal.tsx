@@ -3,7 +3,6 @@ import { StyleSheet, View, FlatList, Alert } from "react-native";
 import { Timestamp, updateDoc, arrayRemove, arrayUnion, DocumentReference } from "firebase/firestore";
 import { ProjectJoinRequest } from "@/app/types";
 
-// Import components from react-native-paper
 import {
   Avatar,
   Button,

@@ -7,29 +7,29 @@ interface MultiSelectComponentProps {
 	data: { label: string; value: any }[];
 	placeholder: string;
 	selectedItems: string[];
-	setSelectedItems: any;
+	setSelectedItems: (items: string[]) => void;
 }
 
 function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems }: MultiSelectComponentProps) {
-	const renderItem = (item: any) => {
-		if (selectedItems.includes(item.value)) {
-			return (
-				<View style={styles.item}>
-					<Text style={styles.selectedTextStyle}>{item.label}</Text>
-					<AntDesign name="check" size={16} color="black" />
-				</View>
-			);
-		}
+	const renderItem = (item: { label: string; value: string; }) => {
+		// FIX #1: Added a key prop to the root View to resolve the warning.
 		return (
-			<View style={styles.item}>
+			<View key={item.value} style={styles.item}>
 				<Text style={styles.selectedTextStyle}>{item.label}</Text>
+				{selectedItems.includes(item.value) && (
+					<AntDesign name="check" size={16} color="black" />
+				)}
 			</View>
 		);
 	};
 
-	const renderSelectedItem = (item: any, unSelect: any) => {
+	// FIX #2: Corrected the type for the 'unSelect' parameter to allow for 'undefined'.
+	const renderSelectedItem = (
+		item: { label: string; value: string; },
+		unSelect: ((item: { label: string; value: string; }) => void) | undefined
+	) => {
 		return (
-			<TouchableOpacity onPress={() => unSelect && unSelect(item)}>
+			<TouchableOpacity key={item.value} onPress={() => unSelect && unSelect(item)}>
 				<View style={styles.selectedStyle}>
 					<Text style={styles.textSelectedStyle}>{item.label}</Text>
 					<AntDesign name="close" size={16} color="black" />
