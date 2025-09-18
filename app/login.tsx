@@ -1,6 +1,5 @@
-import React, { useContext, useState } from "react";
-import {View, StyleSheet, TextInput, Modal, TouchableOpacity, Platform } from "react-native";
-import { Card, Button, Text } from "@rneui/themed";
+import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import {
   sendPasswordResetEmail,
@@ -8,11 +7,9 @@ import {
 } from "firebase/auth";
 import { auth } from "@/firebaseConfig";
 import { Link } from "expo-router";
+import { Button, Card, Text, TextInput, Modal, Portal } from 'react-native-paper';
 
 const Login = () => {
-  // const isAuthenticated = useContext(AuthContext);
-  // if (isAuthenticated) return <Profile />;
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -36,9 +33,9 @@ const Login = () => {
         setMessage("Password field cannot be empty!")
     }
     else
-      if(email === "")
-        setMessage("Email field cannot be empty!")
-      else setMessage("Please enter a valid email address!")
+    if(email === "")
+      setMessage("Email field cannot be empty!")
+    else setMessage("Please enter a valid email address!")
   };
 
   const handleForgotPassword = () => {
@@ -58,67 +55,76 @@ const Login = () => {
     }
   }
 
+  const showModal = () => setForgotPasswordVisible(true);
+  const hideModal = () => setForgotPasswordVisible(false);
+
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
-        <Card containerStyle={styles.card}>
-          <Card.Title style={styles.cardTitle}>Login</Card.Title>
-          <Card.Divider />
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email here"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password here"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={true}
-          />
-          <Text style={styles.errorMessage}>{message}</Text>
-          <Button
-            title="Login"
-            buttonStyle={styles.button}
-            onPress={handleSignIn}
-          />
-          <View style={styles.footer}>
-            <Text>Don't have an account? </Text>
-            <Link href={"/register"}>
-              <Text style={styles.linkText}>Create one</Text>
-            </Link>
-          </View>
-          <Modal visible={forgotPasswordVisible} animationType="slide" transparent>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.title}>Reset Password</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter your email address here"
-                    value={forgotPasswordEmail}
-                    onChangeText={setForgotPasswordEmail}
-                />
-                <Button title="Reset Password" onPress={() => {handleForgotPassword()}} />
-                <Button title="Cancel" onPress={() => {setForgotPasswordVisible(!forgotPasswordVisible)}} color="red" />
-                <Text style={{textAlign: "center", marginTop: 5, marginBottom: -5}}>{forgotPasswordMessage}</Text>
-              </View>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container}>
+          <Portal>
+            <Modal visible={forgotPasswordVisible} onDismiss={hideModal} contentContainerStyle={styles.modalContainer}>
+              <Card>
+                <Card.Title title="Reset Password" titleStyle={styles.title} />
+                <Card.Content>
+                  <TextInput
+                      label="Enter your email"
+                      value={forgotPasswordEmail}
+                      onChangeText={setForgotPasswordEmail}
+                      style={styles.inputModal}
+                      mode="outlined"
+                  />
+                  <Text style={styles.forgotPasswordMessage}>{forgotPasswordMessage}</Text>
+                </Card.Content>
+                <Card.Actions>
+                  <Button onPress={hideModal} textColor="red">Cancel</Button>
+                  <Button onPress={handleForgotPassword}>Reset</Button>
+                </Card.Actions>
+              </Card>
+            </Modal>
+          </Portal>
+
+          <Card style={styles.card}>
+            <Card.Title title="Login" titleStyle={styles.cardTitle} />
+            <Card.Content>
+              <TextInput
+                  label="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  style={styles.input}
+                  mode="outlined"
+              />
+              <TextInput
+                  label="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={true}
+                  style={styles.input}
+                  mode="outlined"
+              />
+              <Text style={styles.errorMessage}>{message}</Text>
+              <Button
+                  mode="contained"
+                  onPress={handleSignIn}
+                  style={styles.button}
+              >
+                Login
+              </Button>
+            </Card.Content>
+            <View style={styles.footer}>
+              <Text>Don't have an account? </Text>
+              <Link href={"/register"}>
+                <Text style={styles.linkText}>Create one</Text>
+              </Link>
             </View>
-          </Modal>
-          <View style={{alignItems: "flex-end"}}>
-            <TouchableOpacity
-                onPress={() => {
-                  setForgotPasswordVisible(!forgotPasswordVisible);
-                }}>
-              <Text style={{color: "Black"}}>Forgot your password?</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-      </SafeAreaView>
-    </SafeAreaProvider>
+            <View style={styles.forgotPasswordContainer}>
+              <Button mode="text" onPress={showModal}>
+                Forgot your password?
+              </Button>
+            </View>
+          </Card>
+        </SafeAreaView>
+      </SafeAreaProvider>
   );
 };
 
@@ -127,91 +133,56 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     backgroundColor: "#f5f5f5",
+    padding: 16,
   },
   card: {
     borderRadius: 15,
-    padding: 20,
-    backgroundColor: 'white',
-    ...Platform.select({
-          ios: {
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-          },
-          android: {
-            elevation: 5, // Elevation is the Android equivalent of shadow
-          },
-          web: {
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // boxShadow is the web equivalent
-          },
-    }),
+    padding: 10,
   },
   cardTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "bold",
   },
   input: {
-    height: 40,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    marginBottom: 12,
   },
-  label: {
-    fontSize: 16,
-    marginVertical: 5,
-    fontWeight: "500",
+  inputModal: {
+    marginBottom: 10,
   },
   button: {
-    backgroundColor: "#6200EE",
-    borderRadius: 10,
-    marginTop: 15,
-    paddingVertical: 10,
+    marginTop: 10,
+    paddingVertical: 4,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 15,
+    marginTop: 20,
+    marginBottom: 10,
   },
   linkText: {
-    color: "#6200EE",
     fontWeight: "bold",
+    color: "#6200EE", // Default theme primary color from Paper
   },
   errorMessage: {
-    color: "#FF0000",
+    color: "#B00020", // Default theme error color from Paper
     textAlign: "center",
-    marginBottom: -5,
+    minHeight: 20,
+  },
+  forgotPasswordContainer: {
+    alignItems: "center",
+    marginTop: 5,
   },
   modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: 430,
     padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    elevation: 5,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
     textAlign: 'center',
   },
-  inputModal: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+  forgotPasswordMessage: {
+    textAlign: "center",
+    marginTop: 10,
+    minHeight: 60,
   },
 });
 

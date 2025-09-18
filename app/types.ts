@@ -14,7 +14,7 @@ export type Mentor = {
 	pictureURL : string;
 	title: string;
 	company : string;
-	interests: string[];
+	skills: string[];
 	email : string;
 };
 

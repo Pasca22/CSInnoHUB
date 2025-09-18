@@ -4,19 +4,24 @@ import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler
 import { Mentor } from "./types";
 import { auth, db } from "@/firebaseConfig";
 import { collection, getDocs, doc } from "firebase/firestore";
-import { Card, Button, Text, Avatar } from "@rneui/themed";
 
+// Import components from react-native-paper
+import {
+    ActivityIndicator as PaperActivityIndicator,
+    Avatar,
+    Button,
+    Card,
+    Chip,
+    Text,
+} from "react-native-paper";
 
 const Mentors = () => {
-    // const isAuthenticated = useContext(AuthContext);
-    // if (!isAuthenticated) return <Login />;
-
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchMentors = async (): Promise<Mentor[]> => {
         const mentorsSnapshot = await getDocs(collection(db, "mentors"));
-    
+
         return mentorsSnapshot.docs.map((doc) => {
             const data = doc.data();
             const mentor: Mentor = {
@@ -24,7 +29,7 @@ const Mentors = () => {
                 pictureURL: data.pictureURL,
                 title: data.title,
                 company: data.company,
-                interests: data.interests,
+                skills: data.skills || data.interests,
                 email: data.email,
             };
             return mentor;
@@ -40,15 +45,6 @@ const Mentors = () => {
         fetchData();
     }, []);
 
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <ActivityIndicator size="large" color="#6200EE" />
-                <Text style={styles.loadingText}>Loading mentors...</Text>
-            </View>
-        );
-    }
-
     const handleRequestMentorship = async (mentor: Mentor) => {
         if (!auth.currentUser) {
             alert("Please log in to request mentorship.");
@@ -61,100 +57,102 @@ const Mentors = () => {
         Linking.openURL(`mailto:${emailAddress}?subject=${subject}&body=${body}`);
     };
 
+    if (loading) {
+        return (
+            <View style={styles.loaderContainer}>
+                <PaperActivityIndicator size="large" />
+                <Text style={styles.loadingText}>Loading mentors...</Text>
+            </View>
+        );
+    }
+
     return (
         <GestureHandlerRootView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollView}>
                 {mentors.map((mentor, index) => (
-                    <View key={index} style={styles.cardWrapper}>
-                        <Card containerStyle={styles.card}>
-                            <Card.Title style={styles.cardTitle}>{mentor.name}</Card.Title>
-                            <Card.Divider />
-                            <Avatar
-                                size="xlarge"
-                                rounded
-                                source={{ uri: mentor.pictureURL }}
-                                containerStyle={styles.avatar}
-                            />
-                            <Text style={styles.titleLabel}>{mentor.title}</Text>
-                            <Text style={styles.infoLabel}>Interests</Text>
-                            <Text>{mentor.interests.join(", ")}</Text>
+                    <Card key={index} style={styles.card}>
+                        <Card.Title
+                            title={mentor.name}
+                            subtitle={mentor.title}
+                            titleStyle={styles.cardTitle}
+                            subtitleStyle={styles.cardSubtitle}
+                            left={(props) => <Avatar.Image {...props} source={{ uri: mentor.pictureURL }} />}
+                        />
+                        <Card.Content>
                             {mentor.company !== "None" && (
-                                <>
-                                    <Text style={styles.infoLabel}>Company</Text>
-                                    <Text>{mentor.company}</Text>
-                                </>
+                                <Text variant="bodyLarge" style={styles.companyText}>
+                                    Company: {mentor.company}
+                                </Text>
                             )}
-                            <Button
-                                title="Request Mentorship"
-                                buttonStyle={styles.button}
-                                onPress={() => handleRequestMentorship(mentor)}
-                            />
-                        </Card>
-                    </View>
-                ))}        
+                            <Text variant="titleMedium" style={styles.skillsTitle}>Skills</Text>
+                            <View style={styles.chipContainer}>
+                                {mentor.skills.map((skill, skillIndex) => (
+                                    <Chip key={skillIndex} style={styles.chip}>{skill}</Chip>
+                                ))}
+                            </View>
+                        </Card.Content>
+                        {/*<Card.Actions>*/}
+                        {/*    <Button*/}
+                        {/*        mode="contained"*/}
+                        {/*        onPress={() => handleRequestMentorship(mentor)}*/}
+                        {/*        style={styles.button}*/}
+                        {/*    >*/}
+                        {/*        Request Mentorship*/}
+                        {/*    </Button>*/}
+                        {/*</Card.Actions>*/}
+                    </Card>
+                ))}
             </ScrollView>
         </GestureHandlerRootView>
     );
 }
 
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "center",
         backgroundColor: "#f5f5f5",
     },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    scrollView: {
+        paddingVertical: 20,
+        paddingHorizontal: 16,
+    },
     card: {
-        borderRadius: 15,
-        padding: 20,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        width: 300,
+        marginBottom: 20,
     },
     cardTitle: {
         fontSize: 20,
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: 10,
     },
-    infoLabel: {
+    cardSubtitle: {
         fontSize: 16,
-        marginTop: 12,
-        fontWeight: "bold",
     },
-    titleLabel: {
-        fontSize: 16,
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: 10,
+    companyText: {
+        marginBottom: 16,
+        fontStyle: 'italic',
+    },
+    skillsTitle: {
+        marginBottom: 8,
+        fontWeight: 'bold',
+    },
+    chipContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    chip: {
+        backgroundColor: '#e0e0e0', // Light grey background for chips
     },
     button: {
-        backgroundColor: "#6200EE",
-        borderRadius: 10,
-        marginTop: 15,
-        paddingVertical: 10,
-    },
-    cardWrapper: {
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    avatar: {
-        alignSelf: "center",
-        backgroundColor: "#6200EE",
-        marginBottom: 10,
-    },
-    scrollView: {
-        paddingTop: 30,
-        paddingBottom: 30,
+        flex: 1, // Make button take full width of actions
+        marginTop: 10,
     },
     loadingText: {
         marginTop: 10,
         fontSize: 16,
-        color: "#6200EE",
-        alignSelf: "center",
     },
 });
 

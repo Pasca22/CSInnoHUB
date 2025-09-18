@@ -1,14 +1,18 @@
-import React, {useEffect, useState} from "react";
-import { Modal, StyleSheet, View, FlatList } from "react-native";
-import { Button, ListItem, Text, Avatar } from "@rneui/themed";
-import {
-  Timestamp,
-  updateDoc,
-  arrayRemove,
-  arrayUnion,
-  DocumentReference,
-} from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View, FlatList, Alert } from "react-native";
+import { Timestamp, updateDoc, arrayRemove, arrayUnion, DocumentReference } from "firebase/firestore";
 import { ProjectJoinRequest } from "@/app/types";
+
+import {
+  Avatar,
+  Button,
+  Card,
+  List,
+  Modal,
+  Portal,
+  Text,
+  useTheme,
+} from "react-native-paper";
 
 interface ViewRequestsModalProps {
   visible: boolean;
@@ -19,161 +23,103 @@ interface ViewRequestsModalProps {
 }
 
 const ViewRequestsModal = ({
-  visible,
-  onClose,
-  requests,
-  users,
-  projectRef
-}: ViewRequestsModalProps) => {
-   const [localRequests, setLocalRequests] = useState<ProjectJoinRequest[]>([]);
+                             visible,
+                             onClose,
+                             requests,
+                             users,
+                             projectRef,
+                           }: ViewRequestsModalProps) => {
+  const [localRequests, setLocalRequests] = useState<ProjectJoinRequest[]>([]);
+  const theme = useTheme();
 
   useEffect(() => {
     setLocalRequests(requests);
-  }, [requests]);
+  }, [requests, visible]);
+
   const formatDate = (timestamp: Timestamp): string =>
-    timestamp.toDate().toLocaleString();
+      timestamp.toDate().toLocaleString();
 
-  const handleAccept = async (userId: string) => {
+  const handleAccept = async (requestToAccept: ProjectJoinRequest) => {
+    if (!projectRef) return Alert.alert("Error", "Project reference is missing");
     try {
-      if (!projectRef) {
-        alert("Project reference is missing");
-        return;
-    }
-      const requestToAccept = requests.find(req => req.ref.id === userId);
-      if (!requestToAccept) return;
-
       await updateDoc(projectRef, {
         requests: arrayRemove(requestToAccept),
-        members: arrayUnion({
-          ref: requestToAccept.ref,
-          role: requestToAccept.role,
-        }),
+        members: arrayUnion({ ref: requestToAccept.ref, role: requestToAccept.role }),
       });
-      setLocalRequests(prev => prev.filter(req => req.ref.id !== userId));
-      alert("Request accepted.");
+      setLocalRequests(prev => prev.filter(req => req.ref.id !== requestToAccept.ref.id));
+      Alert.alert("Success", "Request accepted.");
     } catch (error) {
-      alert("Failed to accept request.");
+      Alert.alert("Error", "Failed to accept request.");
     }
   };
 
-  const handleDecline = async (userId: string) => {
-    if (!projectRef) {
-    alert("Project reference is missing");
-    return;
-    }
+  const handleDecline = async (requestToDecline: ProjectJoinRequest) => {
+    if (!projectRef) return Alert.alert("Error", "Project reference is missing");
     try {
-      const requestToDecline = requests.find(req => req.ref.id === userId);
-      if (!requestToDecline) return;
-
       await updateDoc(projectRef, {
         requests: arrayRemove(requestToDecline),
       });
-      setLocalRequests(prev => prev.filter(req => req.ref.id !== userId));
-      alert("Request declined.");
+      setLocalRequests(prev => prev.filter(req => req.ref.id !== requestToDecline.ref.id));
+      Alert.alert("Success", "Request declined.");
     } catch (error) {
-      alert("Failed to decline request.");
+      Alert.alert("Error", "Failed to decline request.");
     }
   };
 
-    return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          <Text h4 style={styles.title}>Join Requests</Text>
-          {localRequests.length === 0 ? (
-            <Text style={styles.emptyText}>No pending requests</Text>
-          ) : (
-            <FlatList
-              data={localRequests}
-              keyExtractor={(_, index) => index.toString()}
-              renderItem={({ item }) => (
-                <ListItem bottomDivider>
-                  <Avatar
-                    rounded
-                    title={users[item.ref.id]?.charAt(0) || "?"}
-                    containerStyle={styles.avatar}
+  return (
+      <Portal>
+        <Modal visible={visible} onDismiss={onClose}>
+          <Card style={styles.modalCard}>
+            <Card.Title title="Join Requests" />
+            <Card.Content>
+              {localRequests.length === 0 ? (
+                  <Text style={styles.emptyText}>No pending requests</Text>
+              ) : (
+                  <FlatList
+                      data={localRequests}
+                      keyExtractor={(item) => item.ref.id}
+                      renderItem={({ item }) => (
+                          <List.Item
+                              title={users[item.ref.id] || "Unknown"}
+                              description={`Role: ${item.role}\n${formatDate(item.date)}`}
+                              descriptionNumberOfLines={2}
+                              left={() => <Avatar.Text size={40} label={users[item.ref.id]?.charAt(0) || "?"} />}
+                              right={() => (
+                                  <View style={styles.buttonRow}>
+                                    <Button mode="contained" compact onPress={() => handleAccept(item)}>Accept</Button>
+                                    <Button mode="outlined" compact onPress={() => handleDecline(item)} textColor={theme.colors.error} style={{borderColor: theme.colors.error}}>Decline</Button>
+                                  </View>
+                              )}
+                          />
+                      )}
                   />
-                  <ListItem.Content>
-                    <ListItem.Title>
-                      {users[item.ref.id] || "Unknown"}
-                    </ListItem.Title>
-                    <ListItem.Subtitle>{item.role}</ListItem.Subtitle>
-                    <ListItem.Subtitle style={styles.dateText}>
-                      {formatDate(item.date)}
-                    </ListItem.Subtitle>
-                    <View style={styles.buttonRow}>
-                      <Button
-                        title="Accept"
-                        type="solid"
-                        buttonStyle={styles.acceptButton}
-                        onPress={() => handleAccept(item.ref.id)}
-                      />
-                      <Button
-                        title="Decline"
-                        type="outline"
-                        buttonStyle={styles.declineButton}
-                        titleStyle={{ color: "red" }}
-                        onPress={() => handleDecline(item.ref.id)}
-                      />
-                    </View>
-                  </ListItem.Content>
-                </ListItem>
               )}
-            />
-          )}
-          <Button title="Close" onPress={onClose} containerStyle={{ marginTop: 20 }} />
-        </View>
-      </View>
-    </Modal>
+            </Card.Content>
+            <Card.Actions>
+              <Button onPress={onClose} mode="contained">Close</Button>
+            </Card.Actions>
+          </Card>
+        </Modal>
+      </Portal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContainer: {
-    backgroundColor: "white",
-    padding: 20,
-    width: "90%",
-    borderRadius: 10,
-    maxHeight: "80%",
-  },
-  title: {
-    marginBottom: 15,
-    textAlign: "center",
-    color: "#6200EE",
-  },
-  avatar: {
-    backgroundColor: "#6a11cb",
+  modalCard: {
+    width: '90%',
+    maxHeight: '80%',
+    alignSelf: 'center',
   },
   emptyText: {
     textAlign: "center",
     color: "#999",
     fontSize: 16,
-    marginTop: 20,
-  },
-  dateText: {
-    color: "#888",
-    fontSize: 12,
-    marginTop: 4,
+    paddingVertical: 20,
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  acceptButton: {
-    backgroundColor: "#4CAF50",
-    paddingHorizontal: 10,
-    marginRight: 10,
-  },
-  declineButton: {
-    borderColor: "red",
-    paddingHorizontal: 10,
+    alignItems: "center",
+    gap: 8,
   },
 });
 

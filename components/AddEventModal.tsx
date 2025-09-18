@@ -1,31 +1,31 @@
-import {Modal, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
-import {ScrollView} from "react-native-gesture-handler";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet } from "react-native";
 import DatePicker from "@/components/DatePicker";
-import React, {useState} from "react";
-import {Event} from "@/app/types";
-import {addDoc, collection, Timestamp} from "firebase/firestore";
-import {db} from "@/firebaseConfig";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import { ActivityIndicator, Button, Card, Modal, Portal, Text, TextInput, useTheme } from "react-native-paper";
 
 interface AddEventModalProps {
     modalVisible: boolean;
     setModalVisible: (value: boolean) => void;
-    events: Event[];
-    setEvents: (projects: Event[]) => void;
 }
 
-function AddEventModal({modalVisible, setModalVisible, events, setEvents}: AddEventModalProps) {
+function AddEventModal({ modalVisible, setModalVisible }: AddEventModalProps) {
     const [eventName, setEventName] = useState("");
     const [description, setDescription] = useState("");
     const [date, setDate] = useState(new Date());
     const [location, setLocation] = useState("");
     const [registrationLink, setRegistrationLink] = useState("");
     const [operationMessage, setOperationMessage] = useState("");
-
     const [loading, setLoading] = useState(false);
+    const theme = useTheme();
 
     const handleCancel = () => {
-        setModalVisible(false);
-    }
+        if (!loading) {
+            unsetAllFields();
+            setModalVisible(false);
+        }
+    };
 
     const unsetAllFields = () => {
         setEventName("");
@@ -33,201 +33,87 @@ function AddEventModal({modalVisible, setModalVisible, events, setEvents}: AddEv
         setDate(new Date());
         setLocation("");
         setRegistrationLink("");
-    }
+        setOperationMessage("");
+    };
 
     const handleAdd = async () => {
-        // Validation
-        if (!eventName) {
-            setOperationMessage("No event name")
-            return;
-        }
+        setOperationMessage("");
+        if (!eventName.trim()) return setOperationMessage("Event name cannot be empty.");
+        if (!location.trim()) return setOperationMessage("Event location cannot be empty.");
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - 1);
+        if (date < now) return setOperationMessage("Event date cannot be in the past.");
 
-        if (events.some((existingProject) => existingProject.name === eventName)) {
-            setOperationMessage("Project already exists");
-            return;
-        }
-
-        if(!location){
-            setOperationMessage("No event location");
-            return;
-        }
-
-        if (date < new Date()) {
-            setOperationMessage("Invalid date");
-            return;
-        }
-
-        // Save the event to the database
-        let event : Event = {
+        const eventData = {
             name: eventName,
             date: Timestamp.fromDate(date),
             description: description,
             location: location,
-            registrationLink: registrationLink
+            registrationLink: registrationLink,
         };
 
         setLoading(true);
-        await addDoc(collection(db, "events"), event);
-        setLoading(false);
-
-        setEvents([...events, event]);
-
-        setModalVisible(false);
-
-        unsetAllFields();
-    }
+        try {
+            await addDoc(collection(db, "events"), eventData);
+            handleCancel();
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            setOperationMessage("Failed to add event. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <View style={styles.modalContainer}>
-            <Modal
-                animationType="slide"
-                transparent={true}
-            >
-                <View style={styles.modalView}>
+        <Portal>
+            <Modal visible={modalVisible} onDismiss={handleCancel}>
+                <Card style={styles.modalCard}>
                     <ScrollView>
-                        <Text style={styles.modalText}>Add New Event</Text>
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Event name"
-                            value={eventName}
-                            onChangeText={setEventName}
-                        />
-
-                        <TextInput
-                            style={styles.inputMultiline}
-                            placeholder="Description"
-                            multiline
-                            numberOfLines={4}
-                            value={description}
-                            onChangeText={setDescription}
-                        />
-
-                        <DatePicker
-                            date={date}
-                            setDate={setDate}
-                        />
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Location"
-                            value={location}
-                            onChangeText={setLocation}
-                        />
-
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Registration link"
-                            value={registrationLink}
-                            onChangeText={setRegistrationLink}
-                        />
-
-                        <View style={styles.actionButtonsView}>
-                            <TouchableOpacity
-                                onPress={handleAdd}
-                                style={styles.actionButtons}
-                            >
-                                <Text style={styles.buttonText}>Add</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleCancel}
-                                style={styles.actionButtons}
-                            >
-                                <Text style={styles.buttonText}>Cancel</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={styles.operationMessage}>{operationMessage}</Text>
+                        <Card.Title title="Add New Event" />
+                        <Card.Content>
+                            <TextInput label="Event Name" value={eventName} onChangeText={setEventName} mode="outlined" style={styles.input} />
+                            <TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
+                            <DatePicker date={date} setDate={setDate} />
+                            <TextInput label="Location" value={location} onChangeText={setLocation} mode="outlined" style={styles.input} />
+                            <TextInput label="Registration Link (Optional)" value={registrationLink} onChangeText={setRegistrationLink} mode="outlined" style={styles.input} />
+                            {loading ? (
+                                <ActivityIndicator animating={true} style={styles.loader} />
+                            ) : (
+                                <Text style={styles.operationMessage}>{operationMessage}</Text>
+                            )}
+                        </Card.Content>
+                        <Card.Actions style={styles.actions}>
+                            <Button onPress={handleCancel} disabled={loading} textColor={theme.colors.error}>Cancel</Button>
+                            <Button onPress={handleAdd} mode="contained" loading={loading} disabled={loading}>Add Event</Button>
+                        </Card.Actions>
                     </ScrollView>
-                </View>
+                </Card>
             </Modal>
-        </View>
+        </Portal>
     );
 }
 
 const styles = StyleSheet.create({
-    modalContainer: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-    },
-    modalView: {
-        margin: "auto",
-        minWidth: 340,
-        backgroundColor: "white",
-        borderRadius: 20,
-        padding: 35,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    modalText: {
-        marginBottom: 15,
-        textAlign: "center",
-        fontSize: 18,
-        fontWeight: "bold",
+    modalCard: {
+        margin: 20,
+        maxHeight: '90%',
     },
     input: {
-        height: 40,
-        borderColor: "#ccc",
-        borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 15,
-        paddingHorizontal: 10,
-        width: "100%",
+        marginBottom: 16,
     },
-    inputMultiline: {
-        height: 80,
-        borderColor: "#ccc",
-        borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 15,
-        paddingHorizontal: 10,
-        paddingVertical: 10,
-        textAlignVertical: "top",
-        width: "100%",
+    actions: {
+        justifyContent: 'flex-end',
+        padding: 16,
     },
-    actionButtonsView: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        width: "100%",
-    },
-    actionButtons: {
-        backgroundColor: '#6200EE',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 5,
-        width: "30%",
-        alignItems: "center",
-    },
-    buttonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        color: "#6200EE",
-        alignSelf: "center",
+    loader: {
+        marginVertical: 10,
     },
     operationMessage: {
-        marginTop: 15,
-        marginBottom: 0,
-        paddingBottom: 0,
         textAlign: "center",
-        fontSize: 16,
-        color: "#FF0000",
+        fontSize: 14,
+        color: "#B00020",
+        marginTop: 8,
+        minHeight: 20,
     },
 });
 

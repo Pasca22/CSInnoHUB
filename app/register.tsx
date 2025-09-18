@@ -1,16 +1,31 @@
-import React, {useEffect, useState} from "react";
-import {Button, ScrollView, StyleSheet, Text, TextInput} from "react-native";
-import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context";
-import {createUserWithEmailAndPassword} from "firebase/auth";
-import {auth, db} from "@/firebaseConfig"
-import {doc, setDoc} from "@firebase/firestore";
-import {Picker} from "@react-native-picker/picker";
-import { collection, getDocs } from "firebase/firestore";
-import { View, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "@/firebaseConfig";
+import { doc, setDoc, collection, getDocs } from "@firebase/firestore";
 import Autocomplete from "react-native-autocomplete-input";
 
-const Register = () => {
+// Import components from react-native-paper
+import {
+    Button,
+    Card,
+    Menu,
+    Text,
+    TextInput,
+    Title,
+    Chip
+} from 'react-native-paper';
 
+// Helper for Department selection
+const departmentOptions = [
+    { label: "Computer Science", value: "computer_science" },
+    { label: "Mathematics & Computer Science", value: "mathematics_computer_science" },
+    { label: "Artificial Intelligence", value: "artificial_intelligence" },
+    { label: "Information Engineering", value: "information_engineering" }
+];
+
+const Register = () => {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -18,251 +33,164 @@ const Register = () => {
     const [message, setMessage] = useState("");
     const [department, setDepartment] = useState("");
     const [admissionYear, setAdmissionYear] = useState("");
-    const [skills, setSkills] = useState<string[]>([]);
-    const currentYear = new Date().getFullYear()
 
-    const [skillsMap, setSkillsMap] = useState<Record<string, string>>({});
+    // --- Merged State for Skills ---
+    const [skills, setSkills] = useState<string[]>([]);
     const [allSkills, setAllSkills] = useState<string[]>([]);
     const [selectedSkill, setSelectedSkill] = useState<string>("");
     const [showSuggestions, setShowSuggestions] = useState(false);
-    
+
+    // State for Menu and Password visibility
+    const [departmentMenuVisible, setDepartmentMenuVisible] = useState(false);
+    const [admissionYearMenuVisible, setAdmissionYearMenuVisible] = useState(false);
+    const [isPasswordSecure, setIsPasswordSecure] = useState(true);
+    const [isConfirmPasswordSecure, setIsConfirmPasswordSecure] = useState(true);
+
+    const currentYear = new Date().getFullYear();
+
+    // --- Merged Logic for Skills Autocomplete ---
     useEffect(() => {
-    const fetchSkills = async () => {
-      const snapshot = await getDocs(collection(db, "skills"));
-      const skills = snapshot.docs.map((doc) => doc.data().name as string);
-      setAllSkills(skills);
-    };
-    fetchSkills();
-  }, []);
-    
+        const fetchSkills = async () => {
+            const snapshot = await getDocs(collection(db, "skills"));
+            const skillsData = snapshot.docs.map((doc) => doc.data().name as string);
+            setAllSkills(skillsData);
+        };
+        fetchSkills();
+    }, []);
+
     const filteredSkills = selectedSkill === '' ? [] : allSkills.filter(
         (skill) =>
             skill.toLowerCase().includes(selectedSkill.toLowerCase()) &&
             !skills.includes(skill)
     );
-    
-    const handleAdd = async () => {
-        if (!selectedSkill || 
-            skills.includes(selectedSkill)) return;
 
-        setSkills([...skills, selectedSkill]);
+    const handleAddSkill = () => {
+        if (selectedSkill && !skills.includes(selectedSkill)) {
+            setSkills([...skills, selectedSkill]);
+            setSelectedSkill("");
+            setShowSuggestions(false);
+        }
+    };
 
-        setSelectedSkill("");
-        setShowSuggestions(false);
-      };
+    const handleRemoveSkill = (skillToRemove: string) => {
+        setSkills(skills.filter(skill => skill !== skillToRemove));
+    };
 
     const handleSignUp = () => {
         setMessage("");
 
-        try {
-            if (!validateName(name))
-                throw new Error("auth/invalid-name")
-            if (department === "")
-                throw new Error("auth/invalid-department")
+        if (!/^[A-Za-z\s]+$/.test(name.trim())) return setMessage("Please enter a valid name!");
+        if (password !== confirmPassword) return setMessage("Passwords do not match!");
+        if (department === "") return setMessage("Please select your department!");
+        if (admissionYear === "") return setMessage("Please select your admission year!");
 
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(() => {
-                    setDoc(doc(db, "users", "" + auth.currentUser?.uid.toString()), {
-                        auth_ref: auth.currentUser?.uid,
-                        email: email.toString(),
-                        name: name.toString(),
-                        department: department,
-                        admission_year: admissionYear,
-                        profile_photo_url: null,
-                        skills: skills.join(", "),
-                    });
-                })
-                .catch((error) => {
-                    const errorCode = error.code
+        createUserWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                setDoc(doc(db, "users", user.uid), {
+                    auth_ref: user.uid,
+                    email,
+                    name,
+                    department,
+                    admission_year: admissionYear,
+                    profile_photo_url: null,
+                    // MERGED CHANGE: Join the skills array into a string for saving
+                    skills: skills.join(", "),
+                });
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                if (errorCode === "auth/invalid-email") setMessage("Please enter a valid email address!");
+                else if (errorCode === "auth/email-already-in-use") setMessage("An account with this email already exists!");
+                else if (errorCode === "auth/weak-password") setMessage("Password must be at least 6 characters long.");
+                else setMessage("An error occurred. Please try again.");
+            });
+    };
 
-                    console.log(errorCode);
-
-                    if(errorCode === "auth/invalid-email")
-                        setMessage("Please enter a valid email address!");
-                    else if(errorCode === "auth/email-already-in-use")
-                        setMessage("An account with this email already exists!")
-                    else if(errorCode === "auth/missing-password")
-                        setMessage("Please enter a valid password!");
-                    else if(confirmPassword != password)
-                        setMessage("Passwords do not match!");
-                    else if(errorCode === "auth/weak-password")
-                        setMessage("The password length must be above or equal to 8!");
-                })
-        }
-        catch (error) {
-            // @ts-ignore
-            const errorCode = error.message;
-            
-            if (errorCode === "auth/invalid-name")
-                setMessage("Please enter a valid name!");
-            else if(errorCode === "auth/invalid-department")
-                setMessage("Please select your department!");
-        }
-    }
-
-    useEffect(() => {
-        console.log(skills.join(", "));
-    }, [skills])
+    const getDepartmentLabel = (value: string) => departmentOptions.find(option => option.value === value)?.label || "Select Department";
 
     return (
-        <ScrollView>
         <SafeAreaProvider>
-            <SafeAreaView style={styles.container}>
-                <Text>Name</Text>
-                <TextInput style={styles.input} onChangeText={setName} value={name} />
-                <Text>Email</Text>
-                <TextInput style={styles.input} onChangeText={setEmail} value={email} />
-                <Text>Password</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setPassword}
-                    value={password}
-                    secureTextEntry={true}
-                />
-                <Text>Confirm password</Text>
-                <TextInput
-                    style={styles.input}
-                    onChangeText={setConfirmPassword}
-                    value={confirmPassword}
-                    secureTextEntry={true}
-                ></TextInput>
-                <Text>Department</Text>
-                <Picker
-                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 10 }}
-                    onValueChange={(itemValue) => { // @ts-ignore
-                        setDepartment(itemValue)}}>
-                    <Picker.Item label="Select your department" value="" />
-                    <Picker.Item label="Computer science" value="computer_science" />
-                    <Picker.Item label="Mathematics and computer science" value="mathematics_computer_science" />
-                    <Picker.Item label="Artificial intelligence" value="artificial_intelligence" />
-                    <Picker.Item label="Information Engineering" value="information_engineering" />
-                </Picker>
-                <Text>Admission year</Text>
-                <Picker
-                    style={{ height: 30, width: 250, marginBottom: 20, marginTop: 10 }}
-                    onValueChange={(itemValue) => { // @ts-ignore
-                        setAdmissionYear(itemValue)}}>
-                        <Picker.Item label="Select your admission year" value="" />
-                    {
-                        [...Array(currentYear - 1970 + 1)].map((_,i) =>
-                                <Picker.Item key={currentYear - i} label={(currentYear - i).toString()} value={(currentYear - i).toString()}/>
-                        )
-                    }
-                </Picker>
-                <Text>Skills</Text>
-                <View style={styles.addSkillsContainer}>
-                    <Autocomplete
+            <ScrollView contentContainerStyle={styles.container}>
+                <Card style={styles.card}>
+                    <Card.Content>
+                        <Title style={styles.title}>Create Account</Title>
+                        <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" style={styles.inputSpacing} />
+                        <TextInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" mode="outlined" style={styles.inputSpacing} />
+                        <TextInput label="Password" value={password} onChangeText={setPassword} secureTextEntry={isPasswordSecure} mode="outlined" style={styles.inputSpacing} right={<TextInput.Icon icon={isPasswordSecure ? "eye-off" : "eye"} onPress={() => setIsPasswordSecure(!isPasswordSecure)} />} />
+                        <TextInput label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={isConfirmPasswordSecure} mode="outlined" style={styles.inputSpacing} right={<TextInput.Icon icon={isConfirmPasswordSecure ? "eye-off" : "eye"} onPress={() => setIsConfirmPasswordSecure(!isConfirmPasswordSecure)} />} />
+
+                        <Menu visible={departmentMenuVisible} onDismiss={() => setDepartmentMenuVisible(false)} anchor={<Button onPress={() => setDepartmentMenuVisible(true)} mode="outlined" icon="chevron-down" contentStyle={styles.menuAnchorButton} style={styles.inputSpacing}>{getDepartmentLabel(department)}</Button>}>
+                            {departmentOptions.map(option => (<Menu.Item key={option.value} onPress={() => { setDepartment(option.value); setDepartmentMenuVisible(false); }} title={option.label} />))}
+                        </Menu>
+
+                        <Menu visible={admissionYearMenuVisible} onDismiss={() => setAdmissionYearMenuVisible(false)} anchor={<Button onPress={() => setAdmissionYearMenuVisible(true)} mode="outlined" icon="chevron-down" contentStyle={styles.menuAnchorButton} style={styles.inputSpacing}>{admissionYear || "Select Admission Year"}</Button>}>
+                            <ScrollView style={{ maxHeight: 200 }}>
+                                {[...Array(currentYear - 1970 + 1)].map((_, i) => { const year = (currentYear - i).toString(); return <Menu.Item key={year} onPress={() => { setAdmissionYear(year); setAdmissionYearMenuVisible(false); }} title={year} />; })}
+                            </ScrollView>
+                        </Menu>
+
+                        {/* --- Merged UI for Skills --- */}
+                        <View style={styles.autocompleteWrapper}>
+                            <Text style={styles.label}>Skills</Text>
+                            <Autocomplete
                                 data={showSuggestions ? filteredSkills : []}
                                 value={selectedSkill}
                                 onChangeText={(text) => {
-                                  setSelectedSkill(text);
-                                  setShowSuggestions(true);
+                                    setSelectedSkill(text);
+                                    setShowSuggestions(true);
                                 }}
                                 flatListProps={{
-                                  keyExtractor: (_, idx) => idx.toString(),
-                                  renderItem: ({ item }) => (
-                                    <TouchableOpacity
-                                      style={styles.autocompleteItem}
-                                      onPress={() => {
-                                        setSelectedSkill(item);
-                                        setShowSuggestions(false);
-                                      }}
-                                    >
-                                      <Text style={styles.autocompleteText}>{item}</Text>
-                                    </TouchableOpacity>
-                                  ),
+                                    keyExtractor: (_, idx) => idx.toString(),
+                                    renderItem: ({ item }) => (
+                                        <TouchableOpacity
+                                            style={styles.autocompleteItem}
+                                            onPress={() => {
+                                                setSelectedSkill(item);
+                                                setShowSuggestions(false);
+                                            }}
+                                        >
+                                            <Text>{item}</Text>
+                                        </TouchableOpacity>
+                                    ),
                                 }}
                                 inputContainerStyle={styles.inputContainer}
                                 listContainerStyle={styles.suggestionContainer}
-                                placeholder="Search for a skill..."
-                              />
+                                placeholder="Search and add a skill..."
+                            />
+                            <Button onPress={handleAddSkill} disabled={!selectedSkill} mode="contained" style={styles.addButton}>Add</Button>
+                        </View>
+                        <View style={styles.chipContainer}>
+                            {skills.map((skill, index) => (
+                                <Chip key={`${skill}-${index}`} onClose={() => handleRemoveSkill(skill)} style={styles.chip}>{skill}</Chip>
+                            ))}
+                        </View>
 
-                    <View>
-                        <Button title="Add" onPress={handleAdd} disabled={!selectedSkill} />
-                    </View>
-                </View>
-                {filteredSkills.length === 0 && <Button
-                    title="Register"
-                    color="#f1243f"
-                    onPress={handleSignUp}
-                />}
-                <Text style={styles.statusMessage}>{message}</Text>
-
-            </SafeAreaView>
+                        {message ? <Text style={styles.statusMessage}>{message}</Text> : null}
+                        <Button mode="contained" onPress={handleSignUp} style={styles.button}>Register</Button>
+                    </Card.Content>
+                </Card>
+            </ScrollView>
         </SafeAreaProvider>
-</ScrollView>
     );
 };
 
-function validateName(name: string): boolean {
-    name = name.trim()
-    return /^[A-Za-z\s]+$/.test(name);
-}
-
 const styles = StyleSheet.create({
-    container: {
-        marginTop: 20,
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    input: {
-        height: 40,
-        width: 300,
-        margin: 12,
-        borderWidth: 1,
-        padding: 10,
-    },
-    statusMessage: {
-        marginTop: 10,
-        color: "#f60000",
-    },
-    horizontal: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 10,
-    },
-        overlay: {
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-        },
-        title: {
-            fontSize: 18,
-            fontWeight: "bold",
-            marginBottom: 15,
-            color: "#6200EE",
-        },
-        inputContainer: {
-            borderWidth: 0,
-            borderBottomWidth: 1,
-            borderColor: "#ccc",
-        },
-        suggestionContainer: {
-            maxHeight: 150,
-            borderWidth: 1,
-            borderColor: "#ddd",
-            borderRadius: 5,
-            marginTop: 5,
-        },
-        autocompleteItem: {
-            padding: 10,
-            borderBottomWidth: 1,
-            borderColor: "#eee",
-        },
-        autocompleteText: {
-            fontSize: 16,
-            color: "#333",
-        },
-        addSkillsContainer: {
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            marginTop: 10,
-        }
+    container: { padding: 16, justifyContent: "center", backgroundColor: '#f5f5f5' },
+    card: { width: '100%' },
+    title: { textAlign: 'center', marginBottom: 20 },
+    inputSpacing: { marginBottom: 16 },
+    menuAnchorButton: { height: 40, justifyContent: 'center' },
+    button: { marginTop: 16, paddingVertical: 4 },
+    statusMessage: { textAlign: 'center', color: "#B00020", marginBottom: 16 },
+    label: { marginBottom: 8, fontSize: 16, color: 'gray' },
+    autocompleteWrapper: { marginBottom: 10 },
+    inputContainer: { borderWidth: 1, borderColor: '#ccc', borderRadius: 4, paddingHorizontal: 8 },
+    suggestionContainer: { maxHeight: 150, borderWidth: 1, borderColor: "#ddd", borderRadius: 5, marginTop: 5 },
+    autocompleteItem: { padding: 10, borderBottomWidth: 1, borderColor: "#eee" },
+    addButton: { marginTop: 10 },
+    chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+    chip: {},
 });
 
 export default Register;
