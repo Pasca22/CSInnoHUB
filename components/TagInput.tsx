@@ -12,7 +12,6 @@ function TagInput({ tags, setTags }: TagInputProps) {
 
     const handleAddTag = () => {
         const trimmedText = text.trim();
-        // Add tag only if it's not empty and not already in the list
         if (trimmedText && !tags.includes(trimmedText)) {
             setTags([...tags, trimmedText]);
             setText('');
@@ -30,7 +29,7 @@ function TagInput({ tags, setTags }: TagInputProps) {
                 placeholder="Type a tag and press enter"
                 value={text}
                 onChangeText={setText}
-                onSubmitEditing={handleAddTag} // This allows adding the tag by pressing the 'enter' or 'return' key
+                onSubmitEditing={handleAddTag}
                 mode="outlined"
                 style={styles.input}
                 right={
@@ -43,7 +42,7 @@ function TagInput({ tags, setTags }: TagInputProps) {
             />
             <View style={styles.tagContainer}>
                 {tags.map((tag, index) => (
-                    // This key is more robust and guarantees uniqueness among siblings.
+                    // This key prop is essential to fix the warning
                     <Chip
                         key={`${tag}-${index}`}
                         onClose={() => handleRemoveTag(tag)}
@@ -67,11 +66,9 @@ const styles = StyleSheet.create({
     tagContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8, // Adds space between chips
+        gap: 8,
     },
-    chip: {
-        // You can add specific styling for your chips here if needed
-    },
+    chip: {},
 });
 
 export default TagInput;

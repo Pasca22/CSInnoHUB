@@ -4,7 +4,7 @@ import { MultiSelect } from 'react-native-element-dropdown';
 import AntDesign from '@expo/vector-icons/AntDesign';
 
 interface MultiSelectComponentProps {
-	data: { label: string; value: any }[];
+	data: { label: string; value: string }[]; // Value is already a string
 	placeholder: string;
 	selectedItems: string[];
 	setSelectedItems: (items: string[]) => void;
@@ -12,7 +12,6 @@ interface MultiSelectComponentProps {
 
 function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems }: MultiSelectComponentProps) {
 	const renderItem = (item: { label: string; value: string; }) => {
-		// FIX #1: Added a key prop to the root View to resolve the warning.
 		return (
 			<View key={item.value} style={styles.item}>
 				<Text style={styles.selectedTextStyle}>{item.label}</Text>
@@ -23,7 +22,6 @@ function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems 
 		);
 	};
 
-	// FIX #2: Corrected the type for the 'unSelect' parameter to allow for 'undefined'.
 	const renderSelectedItem = (
 		item: { label: string; value: string; },
 		unSelect: ((item: { label: string; value: string; }) => void) | undefined
@@ -46,12 +44,8 @@ function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems 
 				inputSearchStyle={styles.inputSearchStyle}
 				iconStyle={styles.iconStyle}
 				backgroundColor={'rgba(0,0,0,0.2)'}
-				data={data.map((item) => {
-					return {
-						label: item.label,
-						value: JSON.stringify(item.value),
-					};
-				})}
+				// THIS IS THE FIX: The data is passed directly without being mapped and re-stringified.
+				data={data}
 				labelField="label"
 				valueField="value"
 				placeholder={placeholder}

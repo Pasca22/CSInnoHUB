@@ -43,7 +43,6 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 	const fetchUsersForMembersDropdown = async (): Promise<{ label: string; value: string; }[]> => {
 		const usersSnapshot = await getDocs(collection(db, "users"));
-		// MERGED CHANGE: Filter out the current user (founder) before mapping
 		return usersSnapshot.docs
 			.filter(doc => doc.id !== auth.currentUser?.uid)
 			.map((doc) => ({
@@ -56,22 +55,24 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	};
 
 	useEffect(() => {
-		const fetchFounder = async () => {
-			if (!auth.currentUser) return;
-			const userRef = doc(db, "users", auth.currentUser.uid);
-			setFounder(userRef);
-			const userData = await getDoc(userRef);
-			if (userData.exists()) {
-				setFounderName(userData.data().name);
-			}
-		};
-		const fetchMembers = async () => {
-			const membersList = await fetchUsersForMembersDropdown();
-			setMembers(membersList);
-		};
-		fetchFounder();
-		fetchMembers();
-	}, []);
+		if (modalVisible) {
+			const fetchFounder = async () => {
+				if (!auth.currentUser) return;
+				const userRef = doc(db, "users", auth.currentUser.uid);
+				setFounder(userRef);
+				const userData = await getDoc(userRef);
+				if (userData.exists()) {
+					setFounderName(userData.data().name);
+				}
+			};
+			const fetchMembers = async () => {
+				const membersList = await fetchUsersForMembersDropdown();
+				setMembers(membersList);
+			};
+			fetchFounder();
+			fetchMembers();
+		}
+	}, [modalVisible]);
 
 	const handleSaveProject = async () => {
 		setOperationMessage("");
@@ -83,7 +84,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 			};
 		});
 
-		if (!membersList.every((member) => member.role)) {
+		if (!membersList.every((member) => member.role && member.role.trim() !== '')) {
 			setOperationMessage("Please assign roles to all members.");
 			return;
 		}
@@ -102,7 +103,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		setLoading(true);
 		try {
 			const docRef = await addDoc(collection(db, "projects"), projectData);
-			setProjects([...projects, { ...projectData, projectRef: docRef }]);
+			setProjects(prevProjects => [...prevProjects, { ...projectData, projectRef: docRef }]);
 			handleCancel();
 		} catch (error) {
 			setOperationMessage("Failed to save project. Please try again.");
@@ -114,18 +115,9 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 	const handleNext = () => {
 		setOperationMessage("");
-		if (!projectName.trim()) {
-			setOperationMessage("Project name is required.");
-			return;
-		}
-		if (projects.some((p) => p.name.toLowerCase() === projectName.trim().toLowerCase())) {
-			setOperationMessage("A project with this name already exists.");
-			return;
-		}
-		if (selectedMembers.length < 1) {
-			setOperationMessage("Please select at least one member.");
-			return;
-		}
+		if (!projectName.trim()) return setOperationMessage("Project name is required.");
+		if (projects.some((p) => p.name.toLowerCase() === projectName.trim().toLowerCase())) return setOperationMessage("A project with this name already exists.");
+		if (selectedMembers.length < 1) return setOperationMessage("Please select at least one member.");
 
 		setModalVisible(false);
 		setRoleModalVisible(true);
@@ -135,6 +127,10 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		setModalVisible(false);
 		setRoleModalVisible(false);
 		unsetAllFields();
+	};
+
+	const handleRoleChange = (userId: string, role: string) => {
+		setSelectedRoles(prev => ({ ...prev, [userId]: role }));
 	};
 
 	return (
@@ -170,15 +166,15 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 							</View>
 							{selectedMembers.map((memberValue) => {
 								const deserializedMember = JSON.parse(memberValue);
+								const userId = deserializedMember.refToUser;
 								return (
-									<View key={deserializedMember.refToUser} style={styles.roleInputRow}>
-										<Text variant="titleMedium" style={{flex: 1}}>{deserializedMember.userName}</Text>
+									<View key={userId} style={styles.roleInputRow}>
+										<Text variant="titleMedium" style={styles.memberNameText}>{deserializedMember.userName}</Text>
 										<TextInput
 											label="Role"
-											style={{flex: 1}}
-											dense
-											value={selectedRoles[deserializedMember.refToUser] || ""}
-											onChangeText={(text) => setSelectedRoles(prev => ({ ...prev, [deserializedMember.refToUser]: text }))}
+											style={styles.roleInput}
+											value={selectedRoles[userId] || ""}
+											onChangeText={(text) => handleRoleChange(userId, text)}
 										/>
 									</View>
 								);
@@ -222,8 +218,14 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		justifyContent: 'space-between',
 		alignItems: 'center',
-		marginBottom: 12,
+		marginBottom: 16,
 		gap: 10,
+	},
+	memberNameText: {
+		flex: 0.6, // Give 60% of the space to the name
+	},
+	roleInput: {
+		flex: 0.4, // Give 40% of the space to the input
 	},
 });
 
