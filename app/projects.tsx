@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import React, {useCallback, useEffect, useState} from "react";
+import {Platform, RefreshControl, ScrollView, StyleSheet, View} from "react-native";
 import { auth, db } from "@/firebaseConfig";
 import { collection, doc, DocumentReference, getDocs, updateDoc, arrayRemove } from "firebase/firestore";
 import { Project, ProjectJoinRequest } from "./types";
@@ -43,6 +43,9 @@ const Projects = () => {
     const [currentProjectCompetencies, setCurrentProjectCompetencies] = useState<string[]>([]);
     const [filterTitle, setFilterTitle] = useState("");
     const [filterKeywords, setFilterKeywords] = useState("");
+    const [refreshing, setRefreshing] = useState(false);
+    const [filtersVisible, setFiltersVisible] = useState(false);
+
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -51,9 +54,8 @@ const Projects = () => {
         return unsubscribe;
     }, []);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
+    const fetchData = useCallback(async () => {
+        try {
             const projectsCollection = collection(db, "projects");
             const projectsSnapshot = await getDocs(projectsCollection);
             const projectData: Project[] = projectsSnapshot.docs.map((doc) => ({
@@ -69,16 +71,25 @@ const Projects = () => {
                 userData[doc.id] = doc.data().name;
             });
             setUsers(userData);
-
-            setLoading(false);
-        };
-        fetchData();
+        } catch (error) {
+            console.error("Failed to fetch data:", error);
+        } finally {
+            setLoading(false); // For initial load
+        }
     }, []);
 
     useEffect(() => {
+        fetchData(); // Call on initial component mount
+    }, [fetchData]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true); // Show the progress bar
+        await fetchData();    // Re-fetch all the data
+        setRefreshing(false); // Hide the progress bar
+    }, [fetchData]);
+    useEffect(() => {
         updateProjectsView(allProjects, viewMode);
     }, [allProjects, viewMode, currentUser, filterTitle, filterKeywords]);
-
 
     const updateProjectsView = (projectsList: Project[], mode: 'all' | 'my') => {
         let listToFilter = projectsList;
@@ -127,21 +138,49 @@ const Projects = () => {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <ScrollView style={styles.container}>
-                <SegmentedButtons
-                    value={viewMode}
-                    onValueChange={(value) => setViewMode(value as 'all' | 'my')}
-                    buttons={[
-                        { value: 'all', label: 'All Projects' },
-                        { value: 'my', label: 'My Projects' },
-                    ]}
-                    style={styles.toggleContainer}
-                />
+            <ScrollView style={styles.container}
+                        refreshControl={
+                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                        }>
 
-                <View style={styles.filterContainer}>
-                    <TextInput label="Filter by title" value={filterTitle} onChangeText={setFilterTitle} mode="outlined" dense />
-                    <TextInput label="Filter by keywords" value={filterKeywords} onChangeText={setFilterKeywords} mode="outlined" dense style={{marginTop: 10}} />
-                </View>
+                <Button
+                    icon={filtersVisible ? 'filter-variant-minus' : 'filter-variant'}
+                    mode="text"
+                    onPress={() => setFiltersVisible(!filtersVisible)}
+                    style={styles.filterToggleButton}
+                >
+                    {filtersVisible ? 'Hide Filters' : 'Show Filters'}
+                </Button>
+
+                {filtersVisible && (
+                    <>
+                    <SegmentedButtons
+                        value={viewMode}
+                        onValueChange={(value) => setViewMode(value as 'all' | 'my')}
+                        buttons={[
+                            { value: 'all', label: 'All Projects' },
+                            { value: 'my', label: 'My Projects' },
+                        ]}
+                        style={styles.toggleContainer}
+                    />
+                    <View style={styles.filterContainer}>
+                        <TextInput label="Filter by title" value={filterTitle} onChangeText={setFilterTitle} mode="outlined" dense />
+                        <TextInput label="Filter by keywords" value={filterKeywords} onChangeText={setFilterKeywords} mode="outlined" dense style={{marginTop: 10}} />
+
+                        {Platform.OS === 'web' && (
+                            <Button
+                                icon="refresh"
+                                mode="contained-tonal"
+                                onPress={onRefresh}
+                                loading={refreshing}
+                                style={{marginTop: 10}}
+                            >
+                                Refresh List
+                            </Button>
+                        )}
+                    </View>
+                    </>
+                )}
 
                 {projects.map((project) => {
                     const isMyTab = viewMode === 'my';
@@ -262,6 +301,10 @@ const Projects = () => {
 };
 
 const styles = StyleSheet.create({
+    filterToggleButton: {
+        alignSelf: 'center',
+        marginBottom: 10,
+    },
     container: { flex: 1, backgroundColor: "#f5f5f5", padding: 10 },
     loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
     loadingText: { fontSize: 16, fontWeight: "500" },

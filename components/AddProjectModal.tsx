@@ -13,7 +13,7 @@ interface AddProjectModalProps {
 	modalVisible: boolean;
 	setModalVisible: (value: boolean) => void;
 	projects: Project[];
-	setProjects: (projects: Project[]) => void;
+	setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
 }
 
 function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects }: AddProjectModalProps) {
