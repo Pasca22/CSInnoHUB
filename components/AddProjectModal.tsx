@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import { View, StyleSheet } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import DatePicker from "@/components/DatePicker";
@@ -7,7 +7,7 @@ import MultiSelectCustom from "@/components/MultiSelectCustom";
 import { auth, db } from "@/firebaseConfig";
 import { collection, getDocs, addDoc, doc, Timestamp, getDoc, DocumentReference } from "firebase/firestore";
 import { Project } from "@/app/types";
-import { Button, Card, Modal, Portal, Text, TextInput, useTheme } from "react-native-paper";
+import {Button, Card, IconButton, Modal, Portal, Text, TextInput, useTheme} from "react-native-paper";
 
 interface AddProjectModalProps {
 	modalVisible: boolean;
@@ -29,6 +29,8 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	const [founderName, setFounderName] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [operationMessage, setOperationMessage] = useState("");
+	const [isFetchingMembers, setIsFetchingMembers] = useState(false);
+
 	const theme = useTheme();
 
 	const unsetAllFields = () => {
@@ -41,9 +43,10 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		setOperationMessage("");
 	};
 
-	const fetchUsersForMembersDropdown = async (): Promise<{ label: string; value: string; }[]> => {
+	const fetchUsersForMembersDropdown = useCallback(async () => {
+		setIsFetchingMembers(true); // Show loading spinner on the button
 		const usersSnapshot = await getDocs(collection(db, "users"));
-		return usersSnapshot.docs
+		const membersList = usersSnapshot.docs
 			.filter(doc => doc.id !== auth.currentUser?.uid)
 			.map((doc) => ({
 				label: doc.data().name,
@@ -52,7 +55,9 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 					userName: doc.data().name,
 				}),
 			}));
-	};
+		setMembers(membersList);
+		setIsFetchingMembers(false); // Hide spinner
+	}, []);
 
 	useEffect(() => {
 		if (modalVisible) {
@@ -65,14 +70,10 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 					setFounderName(userData.data().name);
 				}
 			};
-			const fetchMembers = async () => {
-				const membersList = await fetchUsersForMembersDropdown();
-				setMembers(membersList);
-			};
 			fetchFounder();
-			fetchMembers();
+			fetchUsersForMembersDropdown(); // Fetch members when modal opens
 		}
-	}, [modalVisible]);
+	}, [modalVisible, fetchUsersForMembersDropdown]);
 
 	const handleSaveProject = async () => {
 		setOperationMessage("");
@@ -137,14 +138,25 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		<Portal>
 			<Modal visible={modalVisible} onDismiss={handleCancel}>
 				<Card style={styles.modalCard}>
-					<ScrollView>
+					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
 						<Card.Title title="Add New Project" />
 						<Card.Content>
 							<TextInput label="Project Name" value={projectName} onChangeText={setProjectName} mode="outlined" style={styles.input} />
 							<TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
 							<DatePicker date={date} setDate={setDate} />
 							<TagInput tags={tags} setTags={setTags} />
-							<MultiSelectCustom data={members} placeholder="Select Members" selectedItems={selectedMembers} setSelectedItems={setSelectedMembers} />
+							<View style={styles.multiSelectContainer}>
+								<View style={{ flex: 1 }}>
+									<MultiSelectCustom data={members} placeholder="Select Members" selectedItems={selectedMembers} setSelectedItems={setSelectedMembers} />
+								</View>
+								<IconButton
+									icon="refresh"
+									size={24}
+									onPress={fetchUsersForMembersDropdown}
+									disabled={isFetchingMembers}
+									style={isFetchingMembers ? styles.refreshingIcon : {}}
+								/>
+							</View>
 							{!!operationMessage && <Text style={styles.errorMessage}>{operationMessage}</Text>}
 						</Card.Content>
 						<Card.Actions>
@@ -157,7 +169,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 			<Modal visible={roleModalVisible} onDismiss={handleCancel}>
 				<Card style={styles.modalCard}>
-					<ScrollView>
+					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
 						<Card.Title title="Assign Member Roles" />
 						<Card.Content>
 							<View style={styles.founderRow}>
@@ -194,8 +206,10 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 const styles = StyleSheet.create({
 	modalCard: {
-		margin: 20,
-		maxHeight: '90%',
+		margin: 10,
+		// maxHeight: '95%',
+		flex: 1,
+		borderRadius: 5,
 	},
 	input: {
 		marginBottom: 16,
@@ -226,6 +240,13 @@ const styles = StyleSheet.create({
 	},
 	roleInput: {
 		flex: 0.4, // Give 40% of the space to the input
+	},
+	multiSelectContainer: {
+		flexDirection: 'row',
+		alignItems: 'flex-start',
+	},
+	refreshingIcon: {
+		opacity: 0.5,
 	},
 });
 

@@ -44,7 +44,6 @@ function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems 
 				inputSearchStyle={styles.inputSearchStyle}
 				iconStyle={styles.iconStyle}
 				backgroundColor={'rgba(0,0,0,0.2)'}
-				// THIS IS THE FIX: The data is passed directly without being mapped and re-stringified.
 				data={data}
 				labelField="label"
 				valueField="value"
@@ -55,6 +54,7 @@ function MultiSelectCustom({ data, placeholder, selectedItems, setSelectedItems 
 				onChange={(item) => { setSelectedItems(item); }}
 				renderItem={renderItem}
 				renderSelectedItem={renderSelectedItem}
+				alwaysRenderSelectedItem={true}
 			/>
 		</View>
 	);
@@ -66,12 +66,14 @@ const styles = StyleSheet.create({
 	container: { marginBottom: 20 },
 	dropdown: {
 		width: "100%",
-		height: 40,
+		minHeight: 40,
+		// height: 40,
 		backgroundColor: 'white',
 		borderColor: "#ccc",
 		borderWidth: 1,
 		borderRadius: 5,
 		paddingHorizontal: 10,
+		paddingVertical: 5
 	},
 	icon: {
 		marginRight: 5,
@@ -101,7 +103,6 @@ const styles = StyleSheet.create({
 		backgroundColor: 'white',
 		shadowColor: '#000',
 		marginTop: 8,
-		marginLeft: 5,
 		marginRight: 5,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
