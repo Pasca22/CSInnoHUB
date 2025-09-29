@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {Platform, RefreshControl, ScrollView, StyleSheet, View} from "react-native";
+import {Platform, RefreshControl, ScrollView, StyleSheet, View, SafeAreaView} from "react-native";
 import { auth, db } from "@/firebaseConfig";
 import { collection, doc, DocumentReference, getDocs, updateDoc, arrayRemove } from "firebase/firestore";
 import { Project, ProjectJoinRequest } from "./types";
@@ -138,6 +138,7 @@ const Projects = () => {
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaView style={styles.fullScreen}>
             <ScrollView style={styles.container}
                         refreshControl={
                             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -289,6 +290,7 @@ const Projects = () => {
                     );
                 })}
             </ScrollView>
+            </SafeAreaView>
 
             <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
 
@@ -304,6 +306,10 @@ const styles = StyleSheet.create({
     filterToggleButton: {
         alignSelf: 'center',
         marginBottom: 10,
+    },
+    fullScreen: {
+        flex: 1,
+        backgroundColor: "#f5f5f5"
     },
     container: { flex: 1, backgroundColor: "#f5f5f5", padding: 10 },
     loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center" },

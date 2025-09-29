@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from "react";
 import { View, StyleSheet } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
+import {GestureHandlerRootView, ScrollView} from "react-native-gesture-handler";
 import DatePicker from "@/components/DatePicker";
 import TagInput from "@/components/TagInput";
 import MultiSelectCustom from "@/components/MultiSelectCustom";
@@ -137,10 +137,10 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 	return (
 		<Portal>
 			<Modal visible={modalVisible} onDismiss={handleCancel}>
-				<Card style={styles.modalCard}>
+				<Card style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
 					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-						<Card.Title title="Add New Project" />
-						<Card.Content>
+						<Card.Title title="Add New Project" titleVariant="headlineMedium" />
+						<Card.Content style={{ flex: 1 }}>
 							<TextInput label="Project Name" value={projectName} onChangeText={setProjectName} mode="outlined" style={styles.input} />
 							<TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
 							<DatePicker date={date} setDate={setDate} />
@@ -168,10 +168,11 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 			</Modal>
 
 			<Modal visible={roleModalVisible} onDismiss={handleCancel}>
-				<Card style={styles.modalCard}>
+				{/* GestureHandlerRootView is also moved inside this Card */}
+				<Card style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
 					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-						<Card.Title title="Assign Member Roles" />
-						<Card.Content>
+						<Card.Title title="Assign Member Roles" titleVariant="headlineMedium" />
+						<Card.Content style={{ flex: 1 }}>
 							<View style={styles.founderRow}>
 								<Text variant="titleMedium">{founderName}</Text>
 								<Text variant="bodyMedium" style={{ color: theme.colors.primary }}>Founder</Text>
@@ -202,14 +203,18 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 			</Modal>
 		</Portal>
 	);
-};
+}
+
 
 const styles = StyleSheet.create({
 	modalCard: {
-		margin: 10,
+		// margin: 10,
 		// maxHeight: '95%',
-		flex: 1,
-		borderRadius: 5,
+		// borderRadius: 5,
+		// flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		padding: 20,
 	},
 	input: {
 		marginBottom: 16,

@@ -9,6 +9,7 @@ import React from "react";
 import { onAuthStateChanged } from "@firebase/auth";
 import { auth } from "@/firebaseConfig";
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Import PaperProvider
 import { PaperProvider } from 'react-native-paper';
@@ -23,16 +24,18 @@ export default function RootLayout() {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setIsAuthenticated(!!user); // Sets to true if user exists, false otherwise
         });
-
+        PaperProvider
         // Cleanup subscription on unmount
         return () => unsubscribe();
     }, []);
 
     return (
         // Wrap the entire app with PaperProvider
-        <PaperProvider>
-            {!isAuthenticated ? <NotAuthenticatedTabBar /> : <AuthenticatedTabBar />}
-        </PaperProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <PaperProvider>
+                {!isAuthenticated ? <NotAuthenticatedTabBar /> : <AuthenticatedTabBar />}
+            </PaperProvider>
+        </GestureHandlerRootView>
     );
 }
 

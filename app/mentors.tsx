@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Linking } from "react-native";
+import {View, StyleSheet, ActivityIndicator, Linking, SafeAreaView} from "react-native";
 import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
 import { Mentor } from "./types";
 import { auth, db } from "@/firebaseConfig";
@@ -67,7 +67,8 @@ const Mentors = () => {
     }
 
     return (
-        <GestureHandlerRootView style={styles.container}>
+        // NEW: Replaced View with SafeAreaView
+        <SafeAreaView style={styles.fullScreen}>
             <ScrollView contentContainerStyle={styles.scrollView}>
                 {mentors.map((mentor, index) => (
                     <Card key={index} style={styles.card}>
@@ -103,11 +104,15 @@ const Mentors = () => {
                     </Card>
                 ))}
             </ScrollView>
-        </GestureHandlerRootView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    fullScreen: {
+        flex: 1,
+        backgroundColor: "#f5f5f5",
+    },
     container: {
         flex: 1,
         backgroundColor: "#f5f5f5",
