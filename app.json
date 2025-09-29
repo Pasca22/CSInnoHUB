@@ -21,7 +21,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/csinnohub_icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.tudor.ileni.csinnohub",
@@ -30,7 +30,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/csinnohub_icon.png"
     },
     "plugins": [
       "expo-router"
