@@ -18,24 +18,42 @@ const Login = () => {
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState("");
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
+    setMessage(""); // Clear previous messages
     const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (reg.test(email) === true) {
-      if(password != "") {
-        signInWithEmailAndPassword(auth, email, password).catch((error) => {
-          const errorCode = error.code;
 
-          if (errorCode === "auth/invalid-credential")
-            setMessage("An account with this credentials doesn't exists!");
-        });
-      }
-      else
-        setMessage("Password field cannot be empty!")
+    // --- Client-side validation ---
+    if (email === "") {
+      setMessage("Email field cannot be empty!");
+      return;
     }
-    else
-    if(email === "")
-      setMessage("Email field cannot be empty!")
-    else setMessage("Please enter a valid email address!")
+    if (!reg.test(email)) {
+      setMessage("Please enter a valid email address!");
+      return;
+    }
+    if (password === "") {
+      setMessage("Password field cannot be empty!");
+      return;
+    }
+
+    // --- Firebase authentication with try/catch ---
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // On success, the onAuthStateChanged listener in your _layout.tsx will handle navigation.
+    } catch (error: any) {
+      const errorCode = error.code;
+      console.log("tt errorCode",errorCode,"auth/wrong-password", "equal",errorCode === "auth/wrong-password")
+      if (errorCode === "auth/user-not-found") {
+        setMessage("Incorrect user. Please try again.");
+      }else if (errorCode === "auth/wrong-password") {
+        setMessage("Incorrect password. Please try again.");
+      }else if (errorCode === "auth/invalid-credential") {
+        setMessage("Incorrect email or password. Please try again.");
+      } else {
+        setMessage("An unexpected error occurred. Please try again.");
+        console.error(error);
+      }
+    }
   };
 
   const handleForgotPassword = () => {
