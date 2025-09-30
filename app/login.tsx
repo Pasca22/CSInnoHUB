@@ -42,7 +42,6 @@ const Login = () => {
       // On success, the onAuthStateChanged listener in your _layout.tsx will handle navigation.
     } catch (error: any) {
       const errorCode = error.code;
-      console.log("tt errorCode",errorCode,"auth/wrong-password", "equal",errorCode === "auth/wrong-password")
       if (errorCode === "auth/user-not-found") {
         setMessage("Incorrect user. Please try again.");
       }else if (errorCode === "auth/wrong-password") {
