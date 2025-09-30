@@ -10,11 +10,19 @@ import { onAuthStateChanged } from "@firebase/auth";
 import { auth } from "@/firebaseConfig";
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PaperProvider, MD3LightTheme } from 'react-native-paper';
 
+const theme = {
+    ...MD3LightTheme,
+    colors: {
+        ...MD3LightTheme.colors,
+        primary: '#6200EE',
+        secondary: '#6a11cb',
+    },
+};
 // Import PaperProvider
-import { PaperProvider } from 'react-native-paper';
-
 const Tab = createBottomTabNavigator();
+
 
 export default function RootLayout() {
     const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -32,7 +40,7 @@ export default function RootLayout() {
     return (
         // Wrap the entire app with PaperProvider
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <PaperProvider>
+            <PaperProvider theme={theme}>
                 {!isAuthenticated ? <NotAuthenticatedTabBar /> : <AuthenticatedTabBar />}
             </PaperProvider>
         </GestureHandlerRootView>

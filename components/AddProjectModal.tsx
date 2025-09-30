@@ -138,67 +138,73 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		<Portal>
 			<Modal visible={modalVisible} onDismiss={handleCancel}>
 				<Card style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
-					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-						<Card.Title title="Add New Project" titleVariant="headlineMedium" />
-						<Card.Content style={{ flex: 1 }}>
-							<TextInput label="Project Name" value={projectName} onChangeText={setProjectName} mode="outlined" style={styles.input} />
-							<TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
-							<DatePicker date={date} setDate={setDate} />
-							<TagInput tags={tags} setTags={setTags} />
-							<View style={styles.multiSelectContainer}>
-								<View style={{ flex: 1 }}>
-									<MultiSelectCustom data={members} placeholder="Select Members" selectedItems={selectedMembers} setSelectedItems={setSelectedMembers} />
+					<ScrollView contentContainerStyle={styles.scrollContentContainer}>
+						<View style={styles.contentWrapper}>
+							<Card.Title title="Add New Project" titleVariant="headlineMedium" />
+							<Card.Content style={styles.cardContent}>
+								<TextInput label="Project Name" value={projectName} onChangeText={setProjectName} mode="outlined" style={styles.input} />
+								<TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
+								<DatePicker date={date} setDate={setDate} />
+								<TagInput tags={tags} setTags={setTags} />
+								<View style={styles.multiSelectContainer}>
+									<View style={{ flex: 1 }}>
+										<MultiSelectCustom data={members} placeholder="Select Members" selectedItems={selectedMembers} setSelectedItems={setSelectedMembers} />
+									</View>
+									<IconButton
+										icon="refresh"
+										size={24}
+										onPress={fetchUsersForMembersDropdown}
+										disabled={isFetchingMembers}
+										style={isFetchingMembers ? styles.refreshingIcon : {}}
+									/>
 								</View>
-								<IconButton
-									icon="refresh"
-									size={24}
-									onPress={fetchUsersForMembersDropdown}
-									disabled={isFetchingMembers}
-									style={isFetchingMembers ? styles.refreshingIcon : {}}
-								/>
-							</View>
-							{!!operationMessage && <Text style={styles.errorMessage}>{operationMessage}</Text>}
-						</Card.Content>
-						<Card.Actions>
-							<Button onPress={handleCancel} textColor={theme.colors.error}>Cancel</Button>
-							<Button onPress={handleNext} mode="contained">Next</Button>
-						</Card.Actions>
+								{!!operationMessage && <Text style={styles.errorMessage}>{operationMessage}</Text>}
+							</Card.Content>
+							<Card.Actions style={styles.cardActions}>
+								<Button onPress={handleCancel} textColor={theme.colors.error}>Cancel</Button>
+								<Button onPress={handleNext} mode="contained">Next</Button>
+							</Card.Actions>
+						</View>
 					</ScrollView>
 				</Card>
 			</Modal>
 
 			<Modal visible={roleModalVisible} onDismiss={handleCancel}>
-				{/* GestureHandlerRootView is also moved inside this Card */}
 				<Card style={[styles.modalCard, { backgroundColor: theme.colors.surface }]}>
-					<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-						<Card.Title title="Assign Member Roles" titleVariant="headlineMedium" />
-						<Card.Content style={{ flex: 1 }}>
-							<View style={styles.founderRow}>
-								<Text variant="titleMedium">{founderName}</Text>
-								<Text variant="bodyMedium" style={{ color: theme.colors.primary }}>Founder</Text>
-							</View>
-							{selectedMembers.map((memberValue) => {
-								const deserializedMember = JSON.parse(memberValue);
-								const userId = deserializedMember.refToUser;
-								return (
-									<View key={userId} style={styles.roleInputRow}>
-										<Text variant="titleMedium" style={styles.memberNameText}>{deserializedMember.userName}</Text>
-										<TextInput
-											label="Role"
-											style={styles.roleInput}
-											value={selectedRoles[userId] || ""}
-											onChangeText={(text) => handleRoleChange(userId, text)}
-										/>
+					<GestureHandlerRootView style={{ flex: 1 }}>
+						<ScrollView contentContainerStyle={styles.scrollContentContainer}>
+							<View style={styles.contentWrapper}>
+								<Card.Title title="Assign Member Roles" titleVariant="headlineMedium" />
+
+								<Card.Content style={styles.cardContent}>
+									<View style={styles.founderRow}>
+										<Text variant="titleMedium">{founderName}</Text>
+										<Text variant="bodyMedium" style={{ color: theme.colors.primary }}>Founder</Text>
 									</View>
-								);
-							})}
-							{!!operationMessage && <Text style={styles.errorMessage}>{operationMessage}</Text>}
-						</Card.Content>
-						<Card.Actions>
-							<Button onPress={handleCancel} disabled={loading} textColor={theme.colors.error}>Cancel</Button>
-							<Button onPress={handleSaveProject} mode="contained" loading={loading} disabled={loading}>Save Project</Button>
-						</Card.Actions>
-					</ScrollView>
+									{selectedMembers.map((memberValue) => {
+										const deserializedMember = JSON.parse(memberValue);
+										const userId = deserializedMember.refToUser;
+										return (
+											<View key={userId} style={styles.roleInputRow}>
+												<Text variant="titleMedium" style={styles.memberNameText}>{deserializedMember.userName}</Text>
+												<TextInput
+													label="Role"
+													style={styles.roleInput}
+													value={selectedRoles[userId] || ""}
+													onChangeText={(text) => handleRoleChange(userId, text)}
+												/>
+											</View>
+										);
+									})}
+									{!!operationMessage && <Text style={styles.errorMessage}>{operationMessage}</Text>}
+								</Card.Content>
+								<Card.Actions style={styles.cardActions}>
+									<Button onPress={handleCancel} disabled={loading} textColor={theme.colors.error}>Cancel</Button>
+									<Button onPress={handleSaveProject} mode="contained" loading={loading} disabled={loading}>Save Project</Button>
+								</Card.Actions>
+							</View>
+						</ScrollView>
+					</GestureHandlerRootView>
 				</Card>
 			</Modal>
 		</Portal>
@@ -208,13 +214,28 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 
 const styles = StyleSheet.create({
 	modalCard: {
-		// margin: 10,
-		// maxHeight: '95%',
-		// borderRadius: 5,
-		// flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-		padding: 20,
+		padding: 10
+	},
+	cardContent: {
+		flex: 1,
+		paddingHorizontal: 20,
+	},
+	// NEW: Style for the footer action buttons
+	cardActions: {
+		padding: 16,
+		borderTopWidth: StyleSheet.hairlineWidth,
+		borderColor: 'rgba(0, 0, 0, 0.12)',
+	},
+	scrollContentContainer: {
+		flexGrow: 1,
+		// justifyContent: 'center',
+	},
+	contentWrapper: {
+		width: '100%',
+		// maxWidth: 12900, // Max width for very large screens like tablets
+		// alignSelf: 'center',
 	},
 	input: {
 		marginBottom: 16,

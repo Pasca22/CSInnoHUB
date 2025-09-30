@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, View } from "react-native";
 import { auth, db } from "@/firebaseConfig";
 import { collection, doc, getDoc, getDocs, Timestamp } from "firebase/firestore";
 import { Event } from "./types";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AddEventModal from "@/components/AddEventModal";
 import ReadMoreText from "@/components/ReadMore";
+// NEW: Import the useSafeAreaInsets hook
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   Button,
@@ -23,6 +24,8 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  // NEW: Get the inset values from the hook
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -93,8 +96,18 @@ export default function Events() {
   }
 
   return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.container}>
+      // MODIFIED: Replaced GestureHandlerRootView with a standard View
+      <View style={styles.fullScreen}>
+        <ScrollView
+            // MODIFIED: Apply dynamic padding using the insets
+            contentContainerStyle={[
+              styles.container,
+              {
+                paddingTop: insets.top + 20,
+                paddingBottom: insets.bottom + 80 // Extra padding for FAB
+              }
+            ]}
+        >
           {events.length === 0 ? (
               <View style={styles.noEventsContainer}>
                 <Icon source="calendar-remove-outline" size={50} color="#BDBDBD" />
@@ -149,9 +162,16 @@ export default function Events() {
         {isAdmin && (
             <FAB
                 icon="plus"
-                style={styles.fab}
                 color="white"
                 onPress={() => setModalVisible(true)}
+                // MODIFIED: FAB style now uses the insets for perfect positioning
+                style={[
+                  styles.fab,
+                  {
+                    right: insets.right + 16,
+                    bottom: insets.bottom + 16,
+                  }
+                ]}
             />
         )}
         {modalVisible && (
@@ -160,15 +180,18 @@ export default function Events() {
                 setModalVisible={setModalVisible}
             />
         )}
-      </GestureHandlerRootView>
+      </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fullScreen: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  // MODIFIED: Removed flexGrow, backgroundColor, and vertical padding
   container: {
-    flexGrow: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 20,
+    paddingHorizontal: 20,
   },
   loaderContainer: {
     flex: 1,
@@ -230,11 +253,9 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
   },
+  // MODIFIED: Removed margin, right, and bottom for dynamic positioning
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
     backgroundColor: '#6a11cb',
   },
 });

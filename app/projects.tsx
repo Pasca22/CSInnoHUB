@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {Platform, RefreshControl, ScrollView, StyleSheet, View, SafeAreaView} from "react-native";
+import {Platform, RefreshControl, ScrollView, StyleSheet, View} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { auth, db } from "@/firebaseConfig";
 import { collection, doc, DocumentReference, getDocs, updateDoc, arrayRemove } from "firebase/firestore";
 import { Project, ProjectJoinRequest } from "./types";
@@ -46,6 +47,7 @@ const Projects = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [filtersVisible, setFiltersVisible] = useState(false);
 
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -137,10 +139,11 @@ const Projects = () => {
     }
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaView style={styles.fullScreen}>
-            <ScrollView style={styles.container}
-                        refreshControl={
+        <GestureHandlerRootView style={styles.fullScreen}>
+            <ScrollView
+                style={[styles.container, { paddingTop: insets.top }]}
+                contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+                refreshControl={
                             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                         }>
 
@@ -155,31 +158,31 @@ const Projects = () => {
 
                 {filtersVisible && (
                     <>
-                    <SegmentedButtons
-                        value={viewMode}
-                        onValueChange={(value) => setViewMode(value as 'all' | 'my')}
-                        buttons={[
-                            { value: 'all', label: 'All Projects' },
-                            { value: 'my', label: 'My Projects' },
-                        ]}
-                        style={styles.toggleContainer}
-                    />
-                    <View style={styles.filterContainer}>
-                        <TextInput label="Filter by title" value={filterTitle} onChangeText={setFilterTitle} mode="outlined" dense />
-                        <TextInput label="Filter by keywords" value={filterKeywords} onChangeText={setFilterKeywords} mode="outlined" dense style={{marginTop: 10}} />
+                        <SegmentedButtons
+                            value={viewMode}
+                            onValueChange={(value) => setViewMode(value as 'all' | 'my')}
+                            buttons={[
+                                { value: 'all', label: 'All Projects' },
+                                { value: 'my', label: 'My Projects' },
+                            ]}
+                            style={styles.toggleContainer}
+                        />
+                        <View style={styles.filterContainer}>
+                            <TextInput label="Filter by title" value={filterTitle} onChangeText={setFilterTitle} mode="outlined" dense />
+                            <TextInput label="Filter by keywords" value={filterKeywords} onChangeText={setFilterKeywords} mode="outlined" dense style={{marginTop: 10}} />
 
-                        {Platform.OS === 'web' && (
-                            <Button
-                                icon="refresh"
-                                mode="contained-tonal"
-                                onPress={onRefresh}
-                                loading={refreshing}
-                                style={{marginTop: 10}}
-                            >
-                                Refresh List
-                            </Button>
-                        )}
-                    </View>
+                            {Platform.OS === 'web' && (
+                                <Button
+                                    icon="refresh"
+                                    mode="contained-tonal"
+                                    onPress={onRefresh}
+                                    loading={refreshing}
+                                    style={{marginTop: 10}}
+                                >
+                                    Refresh List
+                                </Button>
+                            )}
+                        </View>
                     </>
                 )}
 
@@ -290,9 +293,18 @@ const Projects = () => {
                     );
                 })}
             </ScrollView>
-            </SafeAreaView>
 
-            <FAB icon="plus" style={styles.fab} onPress={() => setModalVisible(true)} />
+            <FAB
+                icon="plus"
+                style={[
+                    styles.fab,
+                    {
+                        right: insets.right + 16,
+                        bottom: insets.bottom + 16,
+                    }
+                ]}
+                onPress={() => setModalVisible(true)}
+            />
 
             <AddProjectModal modalVisible={modalVisible} setModalVisible={setModalVisible} projects={allProjects} setProjects={setAllProjects} />
             <RequestJoinModal visible={joinModalVisible} onClose={() => setJoinModalVisible(false)} projectId={selectedProjectRef} />
@@ -303,6 +315,10 @@ const Projects = () => {
 };
 
 const styles = StyleSheet.create({
+    fab: {
+        position: 'absolute',
+        // MODIFIED: margin is now handled by the inline style using insets
+    },
     filterToggleButton: {
         alignSelf: 'center',
         marginBottom: 10,
@@ -327,7 +343,6 @@ const styles = StyleSheet.create({
     chipContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
     italicText: { fontStyle: "italic", color: "#888", marginVertical: 10 },
     moreMembersText: { fontStyle: "italic", color: "#6a11cb", marginTop: 5, textAlign: 'center' },
-    fab: { position: 'absolute', margin: 16, right: 0, bottom: 0 },
 });
 
 export default Projects;

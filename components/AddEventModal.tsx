@@ -96,7 +96,11 @@ function AddEventModal({ modalVisible, setModalVisible }: AddEventModalProps) {
 const styles = StyleSheet.create({
     modalCard: {
         margin: 20,
-        maxHeight: '90%',
+        // maxHeight: '90%',
+        // justifyContent: 'center',
+        // alignItems: 'center',
+        // padding: 10
+
     },
     input: {
         marginBottom: 16,

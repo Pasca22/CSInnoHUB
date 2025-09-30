@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import {View, StyleSheet, ActivityIndicator, Linking, SafeAreaView} from "react-native";
-import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler";
+import { View, StyleSheet, Linking } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import { Mentor } from "./types";
 import { auth, db } from "@/firebaseConfig";
 import { collection, getDocs, doc } from "firebase/firestore";
+// NEW: Import the useSafeAreaInsets hook
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import components from react-native-paper
 import {
@@ -18,13 +20,15 @@ import {
 const Mentors = () => {
     const [mentors, setMentors] = useState<Mentor[]>([]);
     const [loading, setLoading] = useState(true);
+    // NEW: Get the inset values from the hook
+    const insets = useSafeAreaInsets();
 
     const fetchMentors = async (): Promise<Mentor[]> => {
         const mentorsSnapshot = await getDocs(collection(db, "mentors"));
 
         return mentorsSnapshot.docs.map((doc) => {
             const data = doc.data();
-            const mentor: Mentor = {
+            return {
                 name: data.name,
                 pictureURL: data.pictureURL,
                 title: data.title,
@@ -32,7 +36,6 @@ const Mentors = () => {
                 skills: data.skills || data.interests,
                 email: data.email,
             };
-            return mentor;
         });
     };
 
@@ -67,9 +70,18 @@ const Mentors = () => {
     }
 
     return (
-        // NEW: Replaced View with SafeAreaView
-        <SafeAreaView style={styles.fullScreen}>
-            <ScrollView contentContainerStyle={styles.scrollView}>
+        // MODIFIED: Replaced SafeAreaView with a standard View
+        <View style={styles.fullScreen}>
+            <ScrollView
+                // MODIFIED: Applied dynamic padding using the insets
+                contentContainerStyle={[
+                    styles.scrollView,
+                    {
+                        paddingTop: insets.top + 20,
+                        paddingBottom: insets.bottom + 20,
+                    }
+                ]}
+            >
                 {mentors.map((mentor, index) => (
                     <Card key={index} style={styles.card}>
                         <Card.Title
@@ -92,19 +104,19 @@ const Mentors = () => {
                                 ))}
                             </View>
                         </Card.Content>
-                        {/*<Card.Actions>*/}
-                        {/*    <Button*/}
-                        {/*        mode="contained"*/}
-                        {/*        onPress={() => handleRequestMentorship(mentor)}*/}
-                        {/*        style={styles.button}*/}
-                        {/*    >*/}
-                        {/*        Request Mentorship*/}
-                        {/*    </Button>*/}
-                        {/*</Card.Actions>*/}
+                        <Card.Actions>
+                            <Button
+                                mode="contained"
+                                onPress={() => handleRequestMentorship(mentor)}
+                                style={styles.button}
+                            >
+                                Request Mentorship
+                            </Button>
+                        </Card.Actions>
                     </Card>
                 ))}
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -113,17 +125,13 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#f5f5f5",
     },
-    container: {
-        flex: 1,
-        backgroundColor: "#f5f5f5",
-    },
     loaderContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
+    // MODIFIED: Removed vertical padding, as it's now handled dynamically
     scrollView: {
-        paddingVertical: 20,
         paddingHorizontal: 16,
     },
     card: {
@@ -149,10 +157,10 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     chip: {
-        backgroundColor: '#e0e0e0', // Light grey background for chips
+        backgroundColor: '#e0e0e0',
     },
     button: {
-        flex: 1, // Make button take full width of actions
+        flex: 1,
         marginTop: 10,
     },
     loadingText: {
