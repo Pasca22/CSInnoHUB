@@ -6,8 +6,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 registerTranslation("en", enGB);
 
-function DatePicker ({ date, setDate }: { date: any, setDate: (date: any) => void }) {
-    const [open, setOpen] = React.useState(false);
+function DatePicker ({ date, setDate, textValue }: { date: any, setDate: (date: any) => void, textValue: string}) {
+  const [open, setOpen] = React.useState(false);
 
   const onDismissSingle = React.useCallback(() => {
     setOpen(false);
@@ -24,8 +24,8 @@ function DatePicker ({ date, setDate }: { date: any, setDate: (date: any) => voi
   return (
     <SafeAreaProvider>
         <TouchableOpacity onPress={() => setOpen(true)} style={styles.container}>
-            <Text style={{ color: '#666' }}>
-                Starting date: {date.toDateString()}
+            <Text style={{color: "#49454e", fontSize: 16}}>
+                {textValue}: {date && date.toDateString()}
             </Text>
             <AntDesign name="calendar" size={24} color="#6200EE" />
         </TouchableOpacity>
@@ -52,11 +52,11 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: "#79747e",
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        
+        backgroundColor: 'white'
     },
 });
 

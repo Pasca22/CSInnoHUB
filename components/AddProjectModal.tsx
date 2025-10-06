@@ -144,7 +144,7 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 							<Card.Content style={styles.cardContent}>
 								<TextInput label="Project Name" value={projectName} onChangeText={setProjectName} mode="outlined" style={styles.input} />
 								<TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
-								<DatePicker date={date} setDate={setDate} />
+								<DatePicker date={date} setDate={setDate} textValue="Starting date"/>
 								<TagInput tags={tags} setTags={setTags} />
 								<View style={styles.multiSelectContainer}>
 									<View style={{ flex: 1 }}>
