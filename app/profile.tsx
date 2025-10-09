@@ -1,11 +1,12 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
 import React, { useEffect, useState } from "react";
 import { EmailAuthProvider, reauthenticateWithCredential, signOut, updateEmail } from "@firebase/auth";
 import { auth, db } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, addDoc, collection, Timestamp, getDocs, deleteDoc, updateDoc } from "firebase/firestore";
 import DatePicker from "@/components/DatePicker";
-import { Checkbox } from 'react-native-paper';
+import { Checkbox, Chip } from 'react-native-paper';
+import Autocomplete from "react-native-autocomplete-input";
 
 // Import components from react-native-paper
 import {
@@ -35,9 +36,13 @@ const Profile = () => {
     const [admissionYear, setAdmissionYear] = useState("");
     const [department, setDepartment] = useState("");
     const [email, setEmail] = useState("");
-    const [skills, setSkills] = useState(""); // Changed from interests to skills
     const [name, setName] = useState("");
     const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
+
+    const [skills, setSkills] = useState<string[]>([]);
+    const [allSkills, setAllSkills] = useState<string[]>([]);
+    const [selectedSkill, setSelectedSkill] = useState<string>("");
+    const [showSuggestions, setShowSuggestions] = useState(false);
 
     const currentYear = new Date().getFullYear();
     const [message, setMessage] = useState("");
@@ -75,6 +80,15 @@ const Profile = () => {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const fetchSkills = async () => {
+            const snapshot = await getDocs(collection(db, "skills"));
+            const skillsData = snapshot.docs.map((doc) => doc.data().name as string);                
+            setAllSkills(skillsData);
+        };
+        fetchSkills();
+    }, []);
+
     const fetchUserDetails = async (userId: string) => {
         try {
             const userRef = doc(db, "users", userId);
@@ -85,7 +99,7 @@ const Profile = () => {
                 setAdmissionYear(data["admission_year"] || "");
                 setDepartment(data["department"] || "");
                 setEmail(data["email"] || "");
-                setSkills(data["skills"] || ""); // Changed from interests to skills
+                setSkills(data["skills"] || "");
                 setName(data["name"] || "");
                 setProfilePhotoUrl(data["profile_photo_url"] || "");
 
@@ -225,20 +239,20 @@ const Profile = () => {
             };
         });
 
-        // Sort by startDate first, then finishDate
+        
         experiences.sort((a, b) => {
             if (a.startDate && b.startDate) {
-            const diff = b.startDate.getTime() - a.startDate.getTime(); // reversed
+            const diff = b.startDate.getTime() - a.startDate.getTime(); 
             if (diff !== 0) return diff;
             }
 
-            // If startDate is equal (or missing), compare finishDate (latest first)
+            
             if (a.finishDate && b.finishDate) {
             return b.finishDate.getTime() - a.finishDate.getTime();
             }
 
-            // Handle cases where one finishDate is null (ongoing job usually first)
-            if (!a.finishDate && b.finishDate) return -1;  // put ongoing before finished
+            
+            if (!a.finishDate && b.finishDate) return -1;  
             if (a.finishDate && !b.finishDate) return 1;
 
             return 0;
@@ -246,7 +260,7 @@ const Profile = () => {
 
         setExperiences(experiences);
         console.log(experiences);
-        }
+    }
 
     function formatDate(dateStr: any) {
         if (!dateStr) return null; 
@@ -309,6 +323,24 @@ const Profile = () => {
         setAddExperienceVisible(false);
         getExperiences();
     }
+
+    const filteredSkills = selectedSkill === '' ? [] : allSkills.filter(
+        (skill) =>
+            skill.toLowerCase().includes(selectedSkill.toLowerCase()) &&
+            !skills.includes(skill)
+    );
+
+    const handleAddSkill = () => {
+        if (selectedSkill && !skills.includes(selectedSkill)) {
+            setSkills([...skills, selectedSkill]);
+            setSelectedSkill("");
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleRemoveSkill = (skillToRemove: string) => {
+        setSkills(skills.filter(skill => skill !== skillToRemove));
+    };
 
     return (
         <ScrollView>
@@ -385,7 +417,42 @@ const Profile = () => {
                 <Card.Content>
                     <TextInput label="Name" value={name} onChangeText={setName} mode="outlined" style={styles.inputSpacing} />
                     <TextInput label="Email" value={email} disabled={true} mode="outlined" style={styles.inputSpacing} />
-                    <TextInput label="Skills (comma separated)" value={skills} onChangeText={setSkills} mode="outlined" style={styles.inputSpacing} />
+                    {/* <TextInput label="Skills (comma separated)" value={skills} onChangeText={setSkills} mode="outlined" style={styles.inputSpacing} /> */}
+
+                    <View style={styles.autocompleteWrapper}>
+                            <Text style={styles.label}>Skills</Text>
+                            <Autocomplete
+                                data={showSuggestions ? filteredSkills : []}
+                                value={selectedSkill}
+                                onChangeText={(text) => {
+                                    setSelectedSkill(text);
+                                    setShowSuggestions(true);
+                                }}
+                                flatListProps={{
+                                    keyExtractor: (_, idx) => idx.toString(),
+                                    renderItem: ({ item }) => (
+                                        <TouchableOpacity
+                                            style={styles.autocompleteItem}
+                                            onPress={() => {
+                                                setSelectedSkill(item);
+                                                setShowSuggestions(false);
+                                            }}
+                                        >
+                                            <Text>{item}</Text>
+                                        </TouchableOpacity>
+                                    ),
+                                }}
+                                inputContainerStyle={styles.inputContainer}
+                                listContainerStyle={styles.suggestionContainer}
+                                placeholder="Search and add a skill..."
+                            />
+                            <Button onPress={handleAddSkill} disabled={!selectedSkill} mode="contained" style={styles.addButton}>Add</Button>
+                        </View>
+                        <View style={styles.chipContainer}>
+                            {skills.map((skill, index) => (
+                                <Chip key={`${skill}-${index}`} onClose={() => handleRemoveSkill(skill)} style={styles.chip}>{skill}</Chip>
+                            ))}
+                        </View>
 
                     <Menu
                         visible={departmentMenuVisible}
@@ -549,6 +616,14 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: '#f5f5f5'
     },
+    chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+    addButton: { marginTop: 10 },
+    autocompleteItem: { padding: 10, borderBottomWidth: 1, borderColor: "#eee" },
+    autocompleteWrapper: { marginBottom: 10 },
+    label: { marginBottom: 8, fontSize: 16, color: 'gray' },
+    inputContainer: { borderWidth: 1, borderColor: '#ccc', borderRadius: 4, paddingHorizontal: 8 },
+    suggestionContainer: { maxHeight: 150, borderWidth: 1, borderColor: "#ddd", borderRadius: 5, marginTop: 5 },
+    chip: {},
     cardContainer: {
         marginTop: 10
     },
