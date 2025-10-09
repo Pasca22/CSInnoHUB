@@ -75,6 +75,29 @@ function AddProjectModal({ modalVisible, setModalVisible, projects, setProjects 
 		}
 	}, [modalVisible, fetchUsersForMembersDropdown]);
 
+	useEffect(() => {
+		if (tags.length > 0) {
+			const fetchFilteredMembers = async () => {
+				setIsFetchingMembers(true);
+				const usersSnapshot = await getDocs(collection(db, "users"));
+				const filteredMembers = usersSnapshot.docs
+					.filter(doc => doc.id !== auth.currentUser?.uid && tags.some(tag => doc.data().interests?.includes(tag.toLowerCase())))
+					.map((doc) => ({
+						label: doc.data().name,
+						value: JSON.stringify({
+							refToUser: doc.id,
+							userName: doc.data().name,
+						}),
+					}));
+				setMembers(filteredMembers);
+				setIsFetchingMembers(false);
+			};
+			fetchFilteredMembers();
+		} else {
+			fetchUsersForMembersDropdown();
+		}
+	}, [tags]);
+
 	const handleSaveProject = async () => {
 		setOperationMessage("");
 		const membersList = selectedMembers.map((memberValue) => {
