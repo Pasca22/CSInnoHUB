@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TextInput, Chip } from 'react-native-paper';
+import CompetencyDropdown from './CompetencyDropdown';
 
 interface TagInputProps {
     tags: string[];
@@ -32,25 +33,29 @@ function TagInput({ tags, setTags }: TagInputProps) {
                 onSubmitEditing={handleAddTag}
                 mode="outlined"
                 style={styles.input}
-                right={
-                    <TextInput.Icon
-                        icon="plus-circle"
-                        onPress={handleAddTag}
-                        disabled={!text.trim()}
-                    />
-                }
             />
+
+            {text.trim().length > 0 && (
+                <CompetencyDropdown
+                    query={text}
+                    onSelect={tag => {
+                        setTags([...tags, tag]);
+                        setText('');
+                    }}
+                    existingTags={tags}
+                />
+            )}
+
             <View style={styles.tagContainer}>
-                {tags.map((tag, index) => (
-                    // This key prop is essential to fix the warning
-                    <Chip
-                        key={`${tag}-${index}`}
-                        onClose={() => handleRemoveTag(tag)}
-                        style={styles.chip}
-                    >
-                        {tag}
-                    </Chip>
-                ))}
+            {tags.map((tag, index) => (
+                <Chip
+                    key={`${tag}-${index}`}
+                    onClose={() => handleRemoveTag(tag)}
+                    style={styles.chip}
+                >
+                    {tag}
+                </Chip>
+            ))}
             </View>
         </View>
     );
