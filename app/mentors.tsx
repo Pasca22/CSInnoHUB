@@ -98,11 +98,11 @@ const Mentors = () => {
                                 </Text>
                             )}
                             <Text variant="titleMedium" style={styles.skillsTitle}>Skills</Text>
-                            <View style={styles.chipContainer}>
-                                {mentor.skills.map((skill, skillIndex) => (
-                                    <Chip key={skillIndex} style={styles.chip}>{skill}</Chip>
-                                ))}
-                            </View>
+                            {/*<View style={styles.chipContainer}>*/}
+                            {/*    {mentor.skills.map((skill, skillIndex) => (*/}
+                            {/*        <Chip key={skillIndex} style={styles.chip}>{skill}</Chip>*/}
+                            {/*    ))}*/}
+                            {/*</View>*/}
                         </Card.Content>
                         <Card.Actions>
                             <Button

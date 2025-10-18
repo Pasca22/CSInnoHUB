@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
+import {ScrollView, StyleSheet, View, TouchableOpacity, Linking} from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/firebaseConfig";
 import { doc, setDoc, collection, getDocs } from "@firebase/firestore";
 import Autocomplete from "react-native-autocomplete-input";
-
-// Import components from react-native-paper
+import { Link } from "expo-router"; // NEW: Import Link for navigation
 import {
     Button,
     Card,
@@ -14,7 +13,12 @@ import {
     Text,
     TextInput,
     Title,
-    Chip
+    Chip,
+    Checkbox, // NEW: Import Checkbox
+    useTheme, // NEW: Import useTheme for link colors
+    Modal, // NEW: Import Modal
+    Portal, // NEW: Import Portal
+    Paragraph // NEW: Import Paragraph for modal content
 } from 'react-native-paper';
 
 // Helper for Department selection
@@ -33,6 +37,11 @@ const Register = () => {
     const [message, setMessage] = useState("");
     const [department, setDepartment] = useState("");
     const [admissionYear, setAdmissionYear] = useState("");
+    const [agreeToTerms, setAgreeToTerms] = useState(false);
+    const theme = useTheme();
+
+    const [termsModalVisible, setTermsModalVisible] = useState(false);
+    const [gdprModalVisible, setGdprModalVisible] = useState(false);
 
     // --- Merged State for Skills ---
     const [skills, setSkills] = useState<string[]>([]);
@@ -78,6 +87,10 @@ const Register = () => {
 
     const handleSignUp = () => {
         setMessage("");
+        if (!agreeToTerms) {
+            setMessage("Trebuie să fiți de acord cu termenii și condițiile.");
+            return;
+        }
 
         if (!/^[A-Za-z\s]+$/.test(name.trim())) return setMessage("Please enter a valid name!");
         if (password !== confirmPassword) return setMessage("Passwords do not match!");
@@ -109,6 +122,14 @@ const Register = () => {
 
     const getDepartmentLabel = (value: string) => departmentOptions.find(option => option.value === value)?.label || "Select Department";
 
+
+    const showTermsModal = () => setTermsModalVisible(true);
+    const hideTermsModal = () => setTermsModalVisible(false);
+    const showGdprModal = () => setGdprModalVisible(true);
+    const hideGdprModal = () => setGdprModalVisible(false);
+    const handleOpenLink = () => {
+        Linking.openURL('https://www.ubbcluj.ro/ro/politici/');
+    };
     return (
         <SafeAreaProvider>
             <ScrollView contentContainerStyle={styles.container}>
@@ -160,17 +181,84 @@ const Register = () => {
                             />
                             <Button onPress={handleAddSkill} disabled={!selectedSkill} mode="contained" style={styles.addButton}>Add</Button>
                         </View>
-                        <View style={styles.chipContainer}>
-                            {skills.map((skill, index) => (
-                                <Chip key={`${skill}-${index}`} onClose={() => handleRemoveSkill(skill)} style={styles.chip}>{skill}</Chip>
-                            ))}
+                        <View style={styles.checkboxContainer}>
+                            <Checkbox
+                                status={agreeToTerms ? 'checked' : 'unchecked'}
+                                onPress={() => setAgreeToTerms(!agreeToTerms)}
+                            />
+                            {/* MODIFIED: Use TouchableOpacity/Text onPress instead of Link */}
+                            <Text style={styles.checkboxLabel}>
+                                Sunt de acord cu{' '}
+                                {/*<Text style={{ color: theme.colors.primary }} onPress={showTermsModal}>*/}
+                                {/*    Termenii si Conditiile*/}
+                                {/*</Text>*/}
+                                {/*{' '}si{' '}*/}
+                                <Text style={{ color: theme.colors.primary }} onPress={showGdprModal}>
+                                    Politicile de GDPR
+                                </Text>
+                                .
+                            </Text>
                         </View>
 
                         {message ? <Text style={styles.statusMessage}>{message}</Text> : null}
-                        <Button mode="contained" onPress={handleSignUp} style={styles.button}>Register</Button>
+
+                        <Button mode="contained" onPress={handleSignUp} style={styles.button} disabled={!agreeToTerms}>
+                            Register
+                        </Button>
                     </Card.Content>
                 </Card>
             </ScrollView>
+
+            <Portal>
+                <Modal visible={termsModalVisible} onDismiss={hideTermsModal} contentContainerStyle={styles.modalContent}>
+                    <Card>
+                        <Card.Title title="Termeni și Condiții" />
+                        <Card.Content style={styles.modalScrollView}>
+                            <ScrollView>
+                                <Paragraph>
+                                    Bine ați venit la [Numele Aplicației]! Acești termeni și condiții descriu regulile...
+                                </Paragraph>
+                                <Paragraph>
+                                    Prin accesarea acestei aplicații...
+                                </Paragraph>
+                                <Title style={styles.subTitle}>Licență</Title>
+                                <Paragraph>
+                                    Cu excepția cazului în care se specifică altfel...
+                                </Paragraph>
+                            </ScrollView>
+                        </Card.Content>
+                        <Card.Actions>
+                            <Button onPress={hideTermsModal}>Închide</Button>
+                        </Card.Actions>
+                    </Card>
+                </Modal>
+
+                {/* GDPR Modal */}
+                <Modal visible={gdprModalVisible} onDismiss={hideGdprModal} contentContainerStyle={styles.modalContent}>
+                    <Card>
+                        <Card.Title title="Politica de Confidențialitate (GDPR)" />
+                        <Card.Content style={styles.modalScrollView}>
+                            <ScrollView>
+                                <Paragraph>
+                                    Prin prezenta, îmi dau consimțământul pentru utilizarea și prelucrarea datelor cu caracter personal (conform prevederilor Regulamentului privind protecția persoanelor în ceea ce privește prelucrarea datelor cu caracter personal și privind libera circulație a acestor date) de către Universitatea Babeș-Bolyai.
+                                    De asemenea, îmi dau consimțământul pentru utilizarea imaginilor evenimentului la care apar - vezi {' '}
+                                    <Text
+                                        style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
+                                        onPress={handleOpenLink}
+                                    >
+                                        politicile universității
+                                    </Text>
+                                </Paragraph>
+                            </ScrollView>
+                        </Card.Content>
+                        <Card.Actions>
+                            <Button onPress={hideGdprModal}>Închide</Button>
+                        </Card.Actions>
+                    </Card>
+                </Modal>
+            </Portal>
+            {/* --- End of Modals --- */}
+
         </SafeAreaProvider>
     );
 };
@@ -191,6 +279,22 @@ const styles = StyleSheet.create({
     addButton: { marginTop: 10 },
     chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
     chip: {},
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    subTitle: { fontSize: 18, marginTop: 10, marginBottom: 5, fontWeight: 'bold' }, // Style for modal subtitles
+    checkboxLabel: {
+        flex: 1, // Allows text to wrap
+        marginLeft: 8,
+    },
+    modalContent: {
+        padding: 20, // Padding around the Card
+    },
+    modalScrollView: {
+        maxHeight: '70%', // Limit the height of the scrollable area
+    },
 });
 
 export default Register;

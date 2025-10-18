@@ -93,13 +93,13 @@ const Profile = () => {
         try {
             const userRef = doc(db, "users", userId);
             const userSnap = await getDoc(userRef);
-
             if (userSnap.exists()) {
                 const data = userSnap.data();
+                console.log("tt data[\"skills\"]",data["skills"])
                 setAdmissionYear(data["admission_year"] || "");
                 setDepartment(data["department"] || "");
                 setEmail(data["email"] || "");
-                setSkills(data["skills"] || "");
+                setSkills(data["skills"] || []);
                 setName(data["name"] || "");
                 setProfilePhotoUrl(data["profile_photo_url"] || "");
 
