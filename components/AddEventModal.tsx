@@ -73,7 +73,8 @@ function AddEventModal({ modalVisible, setModalVisible }: AddEventModalProps) {
                         <Card.Content>
                             <TextInput label="Event Name" value={eventName} onChangeText={setEventName} mode="outlined" style={styles.input} />
                             <TextInput label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} mode="outlined" style={styles.input} />
-                            <DatePicker date={date} setDate={setDate} />
+                            <Text>Start date</Text>
+                            <DatePicker date={date} setDate={setDate} textValue="Starting date"/>
                             <TextInput label="Location" value={location} onChangeText={setLocation} mode="outlined" style={styles.input} />
                             <TextInput label="Registration Link (Optional)" value={registrationLink} onChangeText={setRegistrationLink} mode="outlined" style={styles.input} />
                             {loading ? (
