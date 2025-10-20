@@ -33,7 +33,7 @@ const Mentors = () => {
                 pictureURL: data.pictureURL,
                 title: data.title,
                 company: data.company,
-                skills: data.skills || data.interests,
+                skills: data.skills || data.interests || [],
                 email: data.email,
             };
         });
@@ -98,11 +98,11 @@ const Mentors = () => {
                                 </Text>
                             )}
                             <Text variant="titleMedium" style={styles.skillsTitle}>Skills</Text>
-                            {/*<View style={styles.chipContainer}>*/}
-                            {/*    {mentor.skills.map((skill, skillIndex) => (*/}
-                            {/*        <Chip key={skillIndex} style={styles.chip}>{skill}</Chip>*/}
-                            {/*    ))}*/}
-                            {/*</View>*/}
+                            <View style={styles.chipContainer}>
+                                {mentor.skills.map((skill, skillIndex) => (
+                                    <Chip key={skillIndex} style={styles.chip}>{skill}</Chip>
+                                ))}
+                            </View>
                         </Card.Content>
                         <Card.Actions>
                             <Button

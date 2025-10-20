@@ -95,7 +95,6 @@ const Profile = () => {
             const userSnap = await getDoc(userRef);
             if (userSnap.exists()) {
                 const data = userSnap.data();
-                console.log("tt data[\"skills\"]",data["skills"])
                 setAdmissionYear(data["admission_year"] || "");
                 setDepartment(data["department"] || "");
                 setEmail(data["email"] || "");
