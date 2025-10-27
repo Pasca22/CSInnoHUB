@@ -3,7 +3,7 @@ import {ScrollView, StyleSheet, View, TouchableOpacity, Linking} from "react-nat
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/firebaseConfig";
-import { doc, setDoc, collection, getDocs } from "@firebase/firestore";
+import { doc, setDoc, collection, getDocs, writeBatch } from "@firebase/firestore";
 import Autocomplete from "react-native-autocomplete-input";
 import { Link } from "expo-router"; // NEW: Import Link for navigation
 import {
@@ -56,6 +56,66 @@ const Register = () => {
     const [isConfirmPasswordSecure, setIsConfirmPasswordSecure] = useState(true);
 
     const currentYear = new Date().getFullYear();
+
+    const techStartupSkills = [
+        // --- Development ---
+        "JavaScript", "TypeScript", "React", "React Native", "Vue.js", "Angular", "Node.js", "Python", "Django", "Flask",
+        "Java", "Spring Boot", "Kotlin", "Android Development", "Swift", "iOS Development", "Flutter", "Dart",
+        "Ruby", "Ruby on Rails", "PHP", "Laravel", "C#", ".NET", "Go", "Rust", "HTML", "CSS", "Sass", "Less",
+        "SQL", "PostgreSQL", "MySQL", "MongoDB", "Firebase", "AWS", "Google Cloud", "Azure", "Docker", "Kubernetes",
+        "Serverless", "GraphQL", "REST APIs", "Microservices", "CI/CD", "Git", "Unit Testing", "Integration Testing",
+        "Web Performance Optimization", "Cybersecurity", "Blockchain", "WebAssembly",
+
+        // --- AI/ML/Data Science ---
+        "Machine Learning", "Deep Learning", "Natural Language Processing (NLP)", "Computer Vision",
+        "Data Analysis", "Data Visualization", "Big Data", "Apache Spark", "Hadoop", "Pandas", "NumPy",
+        "Scikit-learn", "TensorFlow", "PyTorch", "SQL for Data Science", "ETL", "Data Engineering", "A/B Testing",
+
+        // --- Design ---
+        "UI Design", "UX Design", "User Research", "Wireframing", "Prototyping", "Figma", "Sketch", "Adobe XD",
+        "Interaction Design", "Design Systems", "Information Architecture", "Usability Testing", "Visual Design",
+
+        // --- Product & Marketing ---
+        "Product Management", "Agile Methodologies", "Scrum", "Kanban", "Market Research", "Competitive Analysis",
+        "SEO", "SEM", "Content Marketing", "Social Media Marketing", "Email Marketing", "Growth Hacking",
+        "Digital Marketing", "Brand Strategy", "Community Management", "Public Relations (PR)",
+
+        // --- Business & Operations ---
+        "Business Development", "Sales", "Customer Success", "Financial Modeling", "Fundraising", "Project Management",
+        "Operations Management", "Recruiting", "Human Resources (HR)", "Legal Tech"
+    ];
+
+    const populateSkills = async () => {
+        // Use a batch write for efficiency
+        const batch = writeBatch(db);
+        let count = 0;
+
+        console.log("Starting skill population...");
+        const skillsCollectionRef = collection(db, "skills");
+
+        techStartupSkills.forEach(skillName => {
+            // Create a new document reference within the batch
+            const newSkillRef = doc(skillsCollectionRef); // Auto-generates ID
+            batch.set(newSkillRef, {name: skillName});
+            count++;
+            // Firestore batches have a limit of 500 operations.
+            // Although we have only 100 skills, this is good practice.
+            if (count % 499 === 0) {
+                // Commit the batch periodically if needed (not strictly necessary for 100)
+                // await batch.commit();
+                // batch = writeBatch(db); // Start a new batch
+            }
+        });
+
+        // Commit the final batch
+        await batch.commit();
+        console.log(`Successfully added ${count} skills to the database.`);
+    }
+
+    useEffect(() => {
+        // populateSkills(); // don't uncomment this
+    }, []);
+
 
     // --- Merged Logic for Skills Autocomplete ---
     useEffect(() => {

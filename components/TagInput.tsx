@@ -33,6 +33,14 @@ function TagInput({ tags, setTags }: TagInputProps) {
                 onSubmitEditing={handleAddTag}
                 mode="outlined"
                 style={styles.input}
+                right={
+                    text.trim() ? (
+                        <TextInput.Icon
+                            icon="plus-circle-outline" // Or just "plus"
+                            onPress={handleAddTag}
+                        />
+                    ) : null // Render nothing if input is empty
+                }
             />
 
             {text.trim().length > 0 && (

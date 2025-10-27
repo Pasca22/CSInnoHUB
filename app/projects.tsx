@@ -1,8 +1,8 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {Platform, RefreshControl, ScrollView, StyleSheet, View} from "react-native";
+import {Alert, Platform, RefreshControl, ScrollView, StyleSheet, View} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { auth, db } from "@/firebaseConfig";
-import { collection, doc, DocumentReference, getDocs, updateDoc, arrayRemove } from "firebase/firestore";
+import {collection, doc, DocumentReference, getDocs, updateDoc, arrayRemove, deleteDoc} from "firebase/firestore";
 import { Project, ProjectJoinRequest } from "./types";
 import AddProjectModal from "@/components/AddProjectModal";
 import RequestJoinModal from "@/components/RequestJoinModal";
@@ -25,6 +25,8 @@ import {
     SegmentedButtons,
     Text,
     TextInput,
+    Checkbox, // NEW: Import Checkbox
+    useTheme, // NEW: Import useTheme for link colors
 } from "react-native-paper";
 
 const Projects = () => {
@@ -48,6 +50,7 @@ const Projects = () => {
     const [filtersVisible, setFiltersVisible] = useState(false);
 
     const insets = useSafeAreaInsets();
+    const theme = useTheme(); // NEW: Get theme for colors
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -92,6 +95,19 @@ const Projects = () => {
     useEffect(() => {
         updateProjectsView(allProjects, viewMode);
     }, [allProjects, viewMode, currentUser, filterTitle, filterKeywords]);
+
+    const handleDeleteProject = async (projectToDeleteRef: DocumentReference, projectName: string) => {
+        try {
+            await deleteDoc(projectToDeleteRef);
+            setAllProjects(prevProjects =>
+                prevProjects.filter(p => p.projectRef?.id !== projectToDeleteRef.id)
+            );
+            console.log(`Project "${projectName}" deleted successfully.`);
+        } catch (error) {
+            console.error("Error deleting project:", error);
+            Alert.alert("Error", "Failed to delete the project. Please try again.");
+        }
+    };
 
     const updateProjectsView = (projectsList: Project[], mode: 'all' | 'my') => {
         let listToFilter = projectsList;
@@ -237,7 +253,7 @@ const Projects = () => {
                                             setAddCompetencyVisible(true);
                                         }}
                                         style={{ marginTop: 10 }}
-                                    >+ Add Competency</Button>
+                                    >Add Needed Competency</Button>
                                 )}
 
                                 <List.Section>
@@ -261,31 +277,44 @@ const Projects = () => {
                                     )}
                                 </List.Section>
                             </Card.Content>
-                            <Card.Actions>
-                                {isMyTab ? (
+                            <Card.Actions style={styles.cardActions}>
+                                {isMyTab && isFounder ? (
                                     <>
-                                        <Text style={{ color: "orange", fontWeight: "bold", marginRight: 10 }}>
-                                            { (project.requests?.length || 0) > 0 ? "Pending Requests" : "No Pending Requests" }
-                                        </Text>
+                                        {/* Show Requests Button */}
                                         <Button
                                             mode="contained"
                                             onPress={() => {
-                                                setSelectedProjectRef(doc(db, "projects", project.projectRef!.id));
+                                                setSelectedProjectRef(project.projectRef!); // Use guaranteed ref
                                                 setSelectedProjectRequests(project.requests || []);
                                                 setViewRequestsVisible(true);
                                             }}
-                                        >Show Requests ({project.requests?.length || 0})</Button>
+                                            style={styles.actionButton}
+                                        >
+                                            Requests ({project.requests?.length || 0})
+                                        </Button>
+                                        {/* Delete Button */}
+                                        <Button
+                                            mode="contained"
+                                            buttonColor={theme.colors.error}
+                                            onPress={() => handleDeleteProject(project.projectRef!, project.name)} // Use guaranteed ref
+                                            style={styles.actionButton}
+                                        >
+                                            Delete
+                                        </Button>
                                     </>
-                                ) : (
+                                ) : ( // Actions for non-founders or in "All Projects"
                                     !isFounder && (
                                         <Button
                                             mode="contained"
                                             disabled={hasPendingRequest}
                                             onPress={() => {
-                                                setSelectedProjectRef(doc(db, "projects", project.projectRef!.id));
+                                                setSelectedProjectRef(project.projectRef!); // Use guaranteed ref
                                                 setJoinModalVisible(true);
                                             }}
-                                        >{hasPendingRequest ? 'Request Sent' : 'Request to Join'}</Button>
+                                            style={styles.actionButton}
+                                        >
+                                            {hasPendingRequest ? 'Request Sent' : 'Request to Join'}
+                                        </Button>
                                     )
                                 )}
                             </Card.Actions>
@@ -343,6 +372,16 @@ const styles = StyleSheet.create({
     chipContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
     italicText: { fontStyle: "italic", color: "#888", marginVertical: 10 },
     moreMembersText: { fontStyle: "italic", color: "#6a11cb", marginTop: 5, textAlign: 'center' },
+    cardActions: {
+        justifyContent: 'flex-end', // Align buttons to the right
+        paddingTop: 8, // Add some space above buttons
+        flexWrap: 'wrap', // Allow buttons to wrap on smaller screens
+        gap: 8, // Add space between buttons
+    },
+    actionButton: {
+        // Optional: Add common styling for action buttons if needed
+        // e.g., marginHorizontal: 4,
+    }
 });
 
 export default Projects;

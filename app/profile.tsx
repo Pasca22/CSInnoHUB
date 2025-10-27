@@ -583,9 +583,9 @@ const Profile = () => {
                     }} style={styles.button}>
                         Add experience
                     </Button>
-                    <Button mode="contained-tonal" onPress={() => setChangeEmailVisible(true)} style={styles.button}>
-                        Change Email
-                    </Button>
+                    {/*<Button mode="contained-tonal" onPress={() => setChangeEmailVisible(true)} style={styles.button}>*/}
+                    {/*    Change Email*/}
+                    {/*</Button>*/}
                     <Button mode="contained" onPress={updateUserDetails} style={styles.button}>
                         Save Details
                     </Button>
